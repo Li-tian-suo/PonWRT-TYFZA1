@@ -12,6 +12,11 @@ on:
         description: Optional repository path to a custom OpenWrt config
         required: false
         default: ''
+      replace_release:
+        description: Rebuild and replace assets of an existing release
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
@@ -27,6 +32,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+      REPLACE_RELEASE: ${{ inputs.replace_release && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -47,8 +53,8 @@ jobs:
               exit 1
             fi
           fi
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "::error::Release $RELEASE_TAG already exists. Use a new tag to preserve the published firmware."
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 && [ "$REPLACE_RELEASE" != true ]; then
+            echo "::error::Release $RELEASE_TAG already exists. Enable replace_release to rebuild this release, or choose a new tag."
             exit 1
           fi
       - name: Prepare release notes
@@ -63,10 +69,17 @@ jobs:
             zlib1g-dev file wget curl device-tree-compiler u-boot-tools swig \
             libelf-dev python3-pyelftools python3-dev libfuse-dev pkgconf
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+      - name: Verify LAN initialization and port counters
+        run: |
+          python3 scripts/test_lan_probe_isolation.py
+          python3 scripts/test_lan_pm_mapping.py
+          python3 scripts/test_lan_link_mode.py
       - name: Verify storage migration
         run: python3 scripts/test_ubi_storage.py
       - name: Obtain locked OpenWrt source
         run: sh port/scripts/prepare.sh sources/openwrt
+      - name: Verify sysupgrade board identities
+        run: python3 scripts/test_sysupgrade_board.py
       - name: Prepare OMCI compiler
         run: |
           rustup toolchain install 1.96.1 --profile minimal
@@ -104,6 +117,10 @@ jobs:
         run: |
           export PATH="/usr/lib/llvm-18/bin:$PATH"
           sh port/scripts/build.sh sources/openwrt "$(nproc)" 2>&1 | tee artifacts/build.log
+      - name: Verify built board variants
+        run: |
+          kernel=$(python3 port/tools/project_paths.py --kernel-directory sources/openwrt)
+          python3 scripts/test_board_variants.py --kernel "$kernel"
       - name: Package firmware and installer
         run: |
           sh scripts/package_release.sh sources/openwrt artifacts/release
@@ -119,14 +136,16 @@ jobs:
           retention-days: 14
       - name: Publish release
         run: |
-          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-            --target "$(git rev-parse HEAD)" \
-            --title "$RELEASE_TAG" --draft \
-            --notes-file "$RUNNER_TEMP/release-notes.md"
+          if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+              --target "$(git rev-parse HEAD)" \
+              --title "$RELEASE_TAG" --draft \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
           gh release upload "$RELEASE_TAG" artifacts/release/sysupgrade.bin \
             artifacts/release/tyfza1-telnet-install.tar.gz artifacts/release/SHA256SUMS \
             artifacts/release/COPYING artifacts/release/PonWRT-TYFZA1-source.tar.gz \
-            --repo "$GITHUB_REPOSITORY"
+            --repo "$GITHUB_REPOSITORY" --clobber
           gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false --latest \
             --title "$RELEASE_TAG" \
             --notes-file "$RUNNER_TEMP/release-notes.md"
