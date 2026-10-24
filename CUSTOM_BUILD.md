@@ -63,8 +63,8 @@ package_release.sh  -> sysupgrade.bin + APK + SHA256SUMS
 - **USB 网络共享**：`kmod-usb-net`、`rndis`、`cdc-ether/eem/subset/ncm`、`cdc-mbim`、`qmi-wwan`、`ipheth`、`huawei-cdc-ncm`、`sierrawireless`、`rtl8152`、`usb-wdm`、`usb-acm`、`usb-serial(-option/-wwan)`、`umbim`、`uqmi`、`comgt`、`luci-proto-qmi/mbim/ncm/3g`
 - **UU 依赖**：`kmod-tun`、`kmod-nf-conntrack-netlink`、`kmod-nf-nathelper(-extra)`、`kmod-ipt-raw`、`kmod-ipt-nat`、`kmod-nft-nat`、`iptables-mod-extra`、`iptables-mod-nat-extra`
 - **OpenClash 依赖**：`dnsmasq-full`（nftset + DNSSEC）、`ip-full`、`bash`、`curl`、`unzip`、`ruby`、`ruby-yaml`、`luci-compat`、`luci-lua-runtime`、`luci-lib-ipkg`、`ipset`、`kmod-inet-diag`、`kmod-nft-tproxy`、`kmod-nft-socket`
-- **可选（存在依赖问题时自动跳过）**：`usbutils`（lsusb）、`libudev-zero`、`hwdata`
-- **Release 附带的独立 APK**：`luci-app-openclash`、`luci-app-netspeedtest` + `homebox` + `ookla-speedtest`（HomeBox 内网测速）
+- **可选（存在依赖问题时自动跳过）**：`ttyd`、`luci-app-ttyd`、`luci-app-filemanager`
+- **Release 附带的独立 APK**：`luci-app-openclash`、`luci-app-netspeedtest` + `homebox` + `ookla-speedtest`（HomeBox 内网测速），由 `=m` 选择编译产出，不进入 rootfs
 - **原有基础**：VPN（WireGuard/OpenVPN）、SQM、多 WAN、内网穿透所需的内核模块与运行库
 
 ## 4. 为什么有些软件包“编译不进固件”
@@ -109,7 +109,9 @@ Required packages missing after defconfig:
 
 ### 4.4 Kconfig 依赖裁剪 / 名称冲突（真实案例）
 
-- **虚拟依赖**：`usbutils` 声明 `DEPENDS:=+libusb-1.0 +libudev +usbids`，其中 `libudev` 不是真实包名，而由 `libudev-zero` `PROVIDES` 提供。Kconfig 只认真实符号，实际构建中 `usbutils` 因此被静默丢弃（构建日志第一版报错就是 `CONFIG_PACKAGE_usbutils=y` 缺失）。本仓库把它移入可选清单并显式选入 `libudev-zero`/`hwdata`/`libusb-1.0` 作为兜底。
+- **虚拟依赖**：`usbutils` 声明 `DEPENDS:=+libusb-1.0 +libudev +usbids`，其中 `libudev` 不是真实包名，而由 `libudev-zero` `PROVIDES` 提供；`libudev-zero` 又依赖 `libevdev`，`libevdev` 依赖本 target 未启用的 `input-support` 配置符号。整条链在本机型上断开，所以 `usbutils` 被 Kconfig 静默丢弃（第一版构建日志报错就是 `CONFIG_PACKAGE_usbutils=y` 缺失）。本仓库因此不预装 `lsusb`，改用 `/sys/bus/usb/devices` 与 `dmesg` 排查。
+- **源包 vs 二进制包**：`exfatprogs` 只是源码目录名，实际包名是 `exfat-mkfs` 与 `exfat-fsck`；写 `CONFIG_PACKAGE_exfatprogs=y` 会被直接丢弃（第二版构建日志暴露了这个问题）。
+- **条件依赖**：`tar` 的 `DEPENDS` 里带 `+PACKAGE_TAR_BZIP2:bzip2` 一类条件项。任一条件依赖不可满足，整个 `tar` 就会被裁掉；本仓库在配置里显式关闭 BZIP2/XZ/ZSTD/ACL/XATTR，只保留 gzip。
 - `dnsmasq` 与 `dnsmasq-full` 都 `PROVIDES:=dnsmasq`，同时选中会互相顶掉；必须显式 `# CONFIG_PACKAGE_dnsmasq is not set`，本仓库的 `configs/tyfza1-full.config` 已处理。
 - `ip-tiny` 与 `ip-full` 同样提供 `ip`，只能二选一。
 - `kmod-*` 依赖内核配置：`kmod-usb-net-rndis` 需要 `CONFIG_USB_NET_RNDIS_HOST`（由 `kmod-usb-net` 带入）、`kmod-usb-wdm`、`CONFIG_USB` 等；本 target 的 `config-6.18` 只写了 `CONFIG_USB_SUPPORT=y`，其余由 kmod 包自己的 `KCONFIG` 合并进内核配置，缺一环就会被裁剪。
@@ -156,7 +158,7 @@ iperf  -c 192.168.1.2 -t 30    # 老版 iperf2
 ### 5.2 USB 网络共享（手机 / 上网卡）
 
 1. 用数据线把手机接到光猫 USB 口，手机开启“USB 网络共享”。
-2. `lsusb`、`ip link` 查看新增网卡（通常 `usb0` / `eth1`）。
+2. 查看新增网卡：`ls /sys/bus/usb/devices`、`dmesg | tail`、`ip link`（通常 `usb0` / `eth1`）。
 3. LuCI **网络 → 接口 → 添加新接口**，协议选 **DHCP 客户端**，设备选该网卡；或用命令行：
 
 ```sh
