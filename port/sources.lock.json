@@ -34,5 +34,11 @@
   "luci_theme_argon": {
     "url": "https://github.com/jerrykuku/luci-theme-argon.git",
     "commit": "539e3e1db56b2348c3655615540e45638b797c73"
+  },
+  "openclash": {
+    "url": "https://codeload.github.com/vernesong/OpenClash/tar.gz/refs/tags/v0.48.002",
+    "tag": "v0.48.002",
+    "sha256": "40f07c590ff306c14e3f7d2a0583296f25926b4b9506b332410323a76459fb13",
+    "scope": "luci-app-openclash package only; clash/mihomo cores are not redistributed"
   }
 }
