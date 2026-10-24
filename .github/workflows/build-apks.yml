@@ -56,12 +56,20 @@ jobs:
           cd sources/openwrt
           make defconfig
           grep -E '^CONFIG_PACKAGE_(luci-app-openclash|luci-app-netspeedtest|homebox|ookla-speedtest)=' .config
+      - name: Build host tools
+        run: |
+          cd sources/openwrt
+          make -j"$(nproc)" tools/compile
       - name: Build extra packages
         run: |
           cd sources/openwrt
           for pkg in luci-app-openclash luci-app-netspeedtest homebox ookla-speedtest; do
             echo "== building $pkg =="
-            make -j"$(nproc)" "package/$pkg/compile"
+            if ! make -j"$(nproc)" "package/$pkg/compile"; then
+              echo "== retrying $pkg with V=s for diagnostics =="
+              make -j1 V=s "package/$pkg/compile" || true
+              exit 1
+            fi
           done
       - name: Collect APKs
         run: |
