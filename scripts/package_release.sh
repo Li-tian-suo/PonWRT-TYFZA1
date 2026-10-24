@@ -43,11 +43,8 @@ cp "$PROJECT/COPYING" "$OUT/COPYING"
 # Third-party applications that do not fit the 32 MiB rootfs are shipped as
 # standalone APKs next to the firmware image.
 mkdir -p "$OUT/packages"
-for apk in "$TREE"/bin/packages/*/*/luci-app-openclash-*.apk \
-	"$TREE"/bin/packages/*/luci-app-openclash-*.apk \
-	"$TREE"/bin/targets/*/*/packages/luci-app-openclash-*.apk; do
-	[ -f "$apk" ] || continue
-	cp "$apk" "$OUT/packages/"
+for name in luci-app-openclash luci-app-netspeedtest homebox ookla-speedtest; do
+	find "$TREE/bin" -type f -name "$name-*.apk" -exec cp {} "$OUT/packages/" \;
 done
 if ls "$OUT"/packages/*.apk >/dev/null 2>&1; then
 	(cd "$OUT" && sha256sum sysupgrade.bin tyfza1-telnet-install.tar.gz packages/*.apk > SHA256SUMS)

@@ -6,7 +6,8 @@
 
 | 文件 | 作用 |
 | --- | --- |
-| `port/configs/tyfza1-compat.config` | 强制选入固件的软件包清单；构建时逐条校验 |
+| `port/configs/tyfza1-compat.config` | 必须选入固件的软件包清单；构建时逐条校验，缺失即失败 |
+| `port/configs/tyfza1-optional.config` | 可选增强包（ttyd、文件管理、lsusb）；缺失只告警不失败 |
 | `configs/tyfza1-full.config` | 自定义镜像配置（使用 `dnsmasq-full`，其余同默认镜像） |
 | `port/scripts/prepare-extra-packages.sh` | 按固定 tag + SHA-256 拉取 `luci-app-openclash` 源码 |
 | `port/scripts/build.sh` | 构建前准备第三方包；`make world` 之后单独编译 OpenClash APK |
@@ -43,22 +44,27 @@ gh workflow run build-release.yml \
 
 ```
 prepare.sh          -> 固定 commit 79bc56cb 的 OpenWrt 源码
-sync-overlay.sh     -> 设备 overlay + 自定义 .config + compat 依赖合并
-prepare-extra-packages.sh -> 拉取 luci-app-openclash 源码到 package/
+sync-overlay.sh     -> 设备 overlay + 自定义 .config + compat/optional 依赖合并
+prepare-extra-packages.sh -> 拉取 luci-app-openclash、netspeedtest 源码到 package/
 prepare_luci_feeds  -> packages/luci feed + Argon 主题
-make defconfig      -> 解析依赖，逐条校验 compat 清单
+make defconfig      -> 解析依赖，汇总报告所有被丢弃的 compat 包
 make world          -> 内核、rootfs、全部 =y 软件包
-make package/luci-app-openclash/compile -> 单独产出 APK（不进镜像）
+make package/<第三方包>/compile -> 单独产出 APK（不进镜像）
 package_release.sh  -> sysupgrade.bin + APK + SHA256SUMS
 ```
 
 ## 3. 固件内已包含的包
 
-- **工具**：iperf、iperf3、htop、ethtool、usbutils、pciutils、jq、curl、wget-ssl、tar、unzip、bash、ip-full、fdisk、hd-idle、tcpdump
+- **工具**：iperf、iperf3、htop、ethtool、pciutils、jq、curl、wget-ssl、tar、unzip、bash、ip-full、fdisk、hd-idle、tcpdump
+- **网页终端**：`ttyd` + `luci-app-ttyd`（LuCI 服务 → 终端）
+- **文件管理**：`luci-app-filemanager`（LuCI 系统 → 文件管理，基于 `rpcd-mod-file`）
+- **VLAN**：内核 `CONFIG_VLAN_8021Q=y`（generic config），可在 **网络 → 接口 → 设备** 新建 802.1q 设备
 - **USB 存储**：`kmod-usb3`、`kmod-usb-storage(-extras/-uas)`、`kmod-fs-exfat`、`kmod-fs-ntfs3`、`kmod-fs-ext4`、`kmod-fs-f2fs`、`kmod-fs-vfat`、`kmod-fuse`、`block-mount`、`e2fsprogs`、`dosfstools`、`exfatprogs`、`ntfs-3g`、`f2fs-tools`
 - **USB 网络共享**：`kmod-usb-net`、`rndis`、`cdc-ether/eem/subset/ncm`、`cdc-mbim`、`qmi-wwan`、`ipheth`、`huawei-cdc-ncm`、`sierrawireless`、`rtl8152`、`usb-wdm`、`usb-acm`、`usb-serial(-option/-wwan)`、`umbim`、`uqmi`、`comgt`、`luci-proto-qmi/mbim/ncm/3g`
 - **UU 依赖**：`kmod-tun`、`kmod-nf-conntrack-netlink`、`kmod-nf-nathelper(-extra)`、`kmod-ipt-raw`、`kmod-ipt-nat`、`kmod-nft-nat`、`iptables-mod-extra`、`iptables-mod-nat-extra`
 - **OpenClash 依赖**：`dnsmasq-full`（nftset + DNSSEC）、`ip-full`、`bash`、`curl`、`unzip`、`ruby`、`ruby-yaml`、`luci-compat`、`luci-lua-runtime`、`luci-lib-ipkg`、`ipset`、`kmod-inet-diag`、`kmod-nft-tproxy`、`kmod-nft-socket`
+- **可选（存在依赖问题时自动跳过）**：`usbutils`（lsusb）、`libudev-zero`、`hwdata`
+- **Release 附带的独立 APK**：`luci-app-openclash`、`luci-app-netspeedtest` + `homebox` + `ookla-speedtest`（HomeBox 内网测速）
 - **原有基础**：VPN（WireGuard/OpenVPN）、SQM、多 WAN、内网穿透所需的内核模块与运行库
 
 ## 4. 为什么有些软件包“编译不进固件”
@@ -92,16 +98,18 @@ src-git luci     https://git.openwrt.org/project/luci.git^86d1549
 
 ### 4.3 构建脚本“逐条校验”，依赖不满足就失败
 
-`port/scripts/build.sh` 在 `make defconfig` 之后会检查 `tyfza1-compat.config` 里每一条 `CONFIG_PACKAGE_*=y`：
+`port/scripts/build.sh` 在 `make defconfig` 之后会检查 `tyfza1-compat.config` 里每一条 `CONFIG_PACKAGE_*=y`，并把**所有**被 Kconfig 丢弃的项一次性列出来：
 
 ```
-Required plugin dependency missing after defconfig: <包名>
+Required packages missing after defconfig:
+  CONFIG_PACKAGE_xxx=y
 ```
 
-也就是说：**只要某个包的依赖链在本 target 上不成立，整个构建就失败**，不会出现“固件能出来但插件悄悄没了”的情况。常见触发原因见下。
+也就是说：**只要某个必需包的依赖链在本 target 上不成立，整个构建就失败**，不会出现“固件能出来但插件悄悄没了”的情况。可选包（`tyfza1-optional.config`）只打印 `WARNING: optional package dropped`，不中断构建。
 
-### 4.4 Kconfig 依赖裁剪 / 名称冲突
+### 4.4 Kconfig 依赖裁剪 / 名称冲突（真实案例）
 
+- **虚拟依赖**：`usbutils` 声明 `DEPENDS:=+libusb-1.0 +libudev +usbids`，其中 `libudev` 不是真实包名，而由 `libudev-zero` `PROVIDES` 提供。Kconfig 只认真实符号，实际构建中 `usbutils` 因此被静默丢弃（构建日志第一版报错就是 `CONFIG_PACKAGE_usbutils=y` 缺失）。本仓库把它移入可选清单并显式选入 `libudev-zero`/`hwdata`/`libusb-1.0` 作为兜底。
 - `dnsmasq` 与 `dnsmasq-full` 都 `PROVIDES:=dnsmasq`，同时选中会互相顶掉；必须显式 `# CONFIG_PACKAGE_dnsmasq is not set`，本仓库的 `configs/tyfza1-full.config` 已处理。
 - `ip-tiny` 与 `ip-full` 同样提供 `ip`，只能二选一。
 - `kmod-*` 依赖内核配置：`kmod-usb-net-rndis` 需要 `CONFIG_USB_NET_RNDIS_HOST`（由 `kmod-usb-net` 带入）、`kmod-usb-wdm`、`CONFIG_USB` 等；本 target 的 `config-6.18` 只写了 `CONFIG_USB_SUPPORT=y`，其余由 kmod 包自己的 `KCONFIG` 合并进内核配置，缺一环就会被裁剪。
@@ -185,8 +193,47 @@ apk add /tmp/luci-app-openclash-0.48.002-r1.apk
 
 安装后把内核（mihomo / clash meta）放到 `/etc/openclash/core/` 并赋可执行权限，再在 LuCI **服务 → OpenClash** 中启用。内核体积大且需自行选择版本，固件与 APK 都不内置。
 
+### 5.5 网页终端（ttyd）
+
+LuCI **服务 → 终端**，默认监听 `0.0.0.0:7681`；也可以命令行 `ttyd -p 7681 login`。首次使用前在 **系统 → 管理权** 设置 root 密码。
+
+### 5.6 文件管理
+
+LuCI **系统 → 文件管理**（`luci-app-filemanager`），可浏览、上传/下载、编辑文本与十六进制、删除文件。后端使用 `rpcd-mod-file`，`luci-base` 已依赖，无需额外配置。
+
+### 5.7 VLAN（802.1Q）
+
+内核已内置 `CONFIG_VLAN_8021Q=y`，无需额外 kmod：
+
+1. LuCI **网络 → 接口 → 设备** → **添加设备配置** → 类型选 **802.1Q VLAN**，选择父接口并填 VLAN ID。
+2. 或命令行：
+
+```sh
+ip link add link lan1 name lan1.100 type vlan id 100
+ip link set lan1.100 up
+uci set network.vlan100=device
+uci set network.vlan100.name='lan1.100'
+uci set network.vlan100.type='8021q'
+uci set network.vlan100.ifname='lan1'
+uci set network.vlan100.vid='100'
+uci commit network && /etc/init.d/network reload
+```
+
+### 5.8 HomeBox 内网测速
+
+Release 附带 3 个 APK：`luci-app-netspeedtest`、`homebox`、`ookla-speedtest`。应用依赖 Python 3 模块，先联网安装依赖再装本地包：
+
+```sh
+apk update
+apk add python3-light python3-pkg-resources python3-xml python3-email python3-urllib python3-codecs python3-openssl
+apk add /tmp/luci-app-netspeedtest-*.apk /tmp/homebox-*.apk /tmp/ookla-speedtest-*.apk
+```
+
+装好后在 LuCI **网络 → 网速测试** 中打开 HomeBox / iperf3 / 在线测速。三者合计约 30 MiB，安装在 183 MiB 的 overlay 数据卷中，不占用只读 rootfs。
+
 ## 6. 已知限制
 
 - rootfs 只读区固定 32.09 MiB，无法通过本配置继续塞入大型应用；扩展请走 overlay 或 USB 存储。
-- UU 插件与 Clash 内核均为运行时下载，首次使用需要设备能访问外网。
+- UU 插件、Clash 内核与 HomeBox/ookla 测速组件均为独立安装或运行时下载，首次使用需要设备能访问外网。
 - 硬件流量卸载与 UU/部分代理功能可能冲突，必要时在 **网络 → 防火墙** 关闭。
+- 本设备 USB 控制器为 xHCI 主机模式，只能作为 USB 主机（接手机 / 上网卡 / U 盘），不能反向以 RNDIS 网卡模式被电脑识别。

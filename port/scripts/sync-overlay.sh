@@ -49,13 +49,17 @@ sed -i '/^CONFIG_VERSIONOPT=/d; /^# CONFIG_VERSIONOPT is not set$/d; /^CONFIG_VE
 printf 'CONFIG_VERSIONOPT=y\nCONFIG_VERSION_NUMBER="%s"\n' "$VERSION" >> "$TREE/.config"
 printf 'CONFIG_VERSION_REPO="https://downloads.openwrt.org/snapshots"\nCONFIG_SIGNED_PACKAGES=y\nCONFIG_SIGN_EACH_PACKAGE=y\n' >> "$TREE/.config"
 # Keep the common plugin dependencies in existing and custom build configs.
-while IFS= read -r setting; do
-    case "$setting" in
-        CONFIG_PACKAGE_*=y)
-            option=${setting%%=*}
-            sed -i "/^$option=/d; /^# $option is not set$/d" "$TREE/.config"
-            printf '%s\n' "$setting" >> "$TREE/.config"
-            ;;
-    esac
-done < "$PORT/configs/tyfza1-compat.config"
+# Mandatory selections come from tyfza1-compat.config, optional add-ons from
+# tyfza1-optional.config.
+for list in tyfza1-compat tyfza1-optional; do
+    while IFS= read -r setting; do
+        case "$setting" in
+            CONFIG_PACKAGE_*=y)
+                option=${setting%%=*}
+                sed -i "/^$option=/d; /^# $option is not set$/d" "$TREE/.config"
+                printf '%s\n' "$setting" >> "$TREE/.config"
+                ;;
+        esac
+    done < "$PORT/configs/$list.config"
+done
 echo "Applied RTL9617C overlay to $TREE at $PIN"
