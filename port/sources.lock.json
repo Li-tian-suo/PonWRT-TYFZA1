@@ -40,5 +40,11 @@
     "tag": "v0.48.002",
     "sha256": "40f07c590ff306c14e3f7d2a0583296f25926b4b9506b332410323a76459fb13",
     "scope": "luci-app-openclash package only; clash/mihomo cores are not redistributed"
+  },
+  "netspeedtest": {
+    "url": "https://codeload.github.com/sirpdboy/netspeedtest/tar.gz/0c936e9dd513b2915229871b088b85ca817f5083",
+    "commit": "0c936e9dd513b2915229871b088b85ca817f5083",
+    "sha256": "20f9898d4c5a995fc415080bb6611e278609af01f38d6fe7884a3c9b06c0ce44",
+    "scope": "HomeBox LAN speed test stack (luci-app-netspeedtest, homebox, ookla-speedtest); shipped as APKs because of the rootfs limit"
   }
 }

@@ -36,22 +36,32 @@ if ! grep -Fq 'regulatory.db.p7s' package/firmware/wireless-regdb/Makefile; then
     REGDB_PATCHED=1
 fi
 make defconfig
+# Report every selection that Kconfig dropped, not just the first one, so a
+# missing dependency can be diagnosed from a single build log.
+missing=
 for package in luci-app-tyfza1-pon luci-theme-argon luci-i18n-argon-config-zh-cn; do
-    grep -qx "CONFIG_PACKAGE_$package=y" .config || {
-        echo "Required firmware package missing after defconfig: $package" >&2
-        exit 1
-    }
+    grep -qx "CONFIG_PACKAGE_$package=y" .config || missing="$missing CONFIG_PACKAGE_$package"
 done
 while IFS= read -r setting; do
     case "$setting" in
         CONFIG_PACKAGE_*=y)
-            grep -qxF "$setting" .config || {
-                echo "Required plugin dependency missing after defconfig: $setting" >&2
-                exit 1
-            }
+            grep -qxF "$setting" .config || missing="$missing $setting"
             ;;
     esac
 done < "$PORT/configs/tyfza1-compat.config"
+if [ -n "$missing" ]; then
+    echo "Required packages missing after defconfig:" >&2
+    for setting in $missing; do
+        echo "  $setting" >&2
+    done
+    echo "A package disappears when its Kconfig dependencies cannot be met on" >&2
+    echo "this target (missing feed package, kernel subsystem, or arch/BROKEN)." >&2
+    exit 1
+fi
+# Optional add-ons are reported, not fatal.
+for setting in $(grep -E '^CONFIG_PACKAGE_[A-Za-z0-9_.+-]+=y$' "$PORT/configs/tyfza1-optional.config"); do
+    grep -qxF "$setting" .config || echo "WARNING: optional package dropped after defconfig: $setting" >&2
+done
 if [ "$REGDB_PATCHED" = 1 ]; then
     make package/firmware/wireless-regdb/clean
 fi
@@ -75,7 +85,7 @@ make -j"$JOBS" world
 # Packages that are too large for the 32 MiB rootfs are built as standalone
 # APKs instead of being installed into the image. Failures stay non-fatal so
 # the firmware itself is still produced and packaged.
-for pkg in ${TYFZA1_EXTRA_PACKAGES-luci-app-openclash}; do
+for pkg in ${TYFZA1_EXTRA_PACKAGES-luci-app-openclash luci-app-netspeedtest homebox ookla-speedtest}; do
 	if [ ! -f "package/$pkg/Makefile" ]; then
 		echo "WARNING: extra package $pkg is not present in the tree" >&2
 		continue
