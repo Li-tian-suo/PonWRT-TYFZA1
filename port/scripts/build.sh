@@ -59,7 +59,7 @@ if [ -n "$missing" ]; then
     exit 1
 fi
 # Optional add-ons are reported, not fatal.
-for setting in $(grep -E '^CONFIG_PACKAGE_[A-Za-z0-9_.+-]+=y$' "$PORT/configs/tyfza1-optional.config"); do
+for setting in $(grep -E '^CONFIG_PACKAGE_[A-Za-z0-9_.+-]+=[ym]$' "$PORT/configs/tyfza1-optional.config"); do
     grep -qxF "$setting" .config || echo "WARNING: optional package dropped after defconfig: $setting" >&2
 done
 if [ "$REGDB_PATCHED" = 1 ]; then

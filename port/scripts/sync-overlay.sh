@@ -54,7 +54,7 @@ printf 'CONFIG_VERSION_REPO="https://downloads.openwrt.org/snapshots"\nCONFIG_SI
 for list in tyfza1-compat tyfza1-optional; do
     while IFS= read -r setting; do
         case "$setting" in
-            CONFIG_PACKAGE_*=y)
+            CONFIG_PACKAGE_*=y|CONFIG_PACKAGE_*=m)
                 option=${setting%%=*}
                 sed -i "/^$option=/d; /^# $option is not set$/d" "$TREE/.config"
                 printf '%s\n' "$setting" >> "$TREE/.config"
