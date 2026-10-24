@@ -40,4 +40,17 @@ cp "$OUT/fw_printenv" "$OUT/fw_setenv"
 tar --owner=0 --group=0 --numeric-owner -czf "$OUT/tyfza1-telnet-install.tar.gz" \
     -C "$OUT" kernel.itb rootfs.squashfs install.sh tyfza1-storage.sh ubirsvol fw_env.config fw_printenv fw_setenv
 cp "$PROJECT/COPYING" "$OUT/COPYING"
-(cd "$OUT" && sha256sum sysupgrade.bin tyfza1-telnet-install.tar.gz > SHA256SUMS)
+# Third-party applications that do not fit the 32 MiB rootfs are shipped as
+# standalone APKs next to the firmware image.
+mkdir -p "$OUT/packages"
+for apk in "$TREE"/bin/packages/*/*/luci-app-openclash-*.apk \
+	"$TREE"/bin/packages/*/luci-app-openclash-*.apk \
+	"$TREE"/bin/targets/*/*/packages/luci-app-openclash-*.apk; do
+	[ -f "$apk" ] || continue
+	cp "$apk" "$OUT/packages/"
+done
+if ls "$OUT"/packages/*.apk >/dev/null 2>&1; then
+	(cd "$OUT" && sha256sum sysupgrade.bin tyfza1-telnet-install.tar.gz packages/*.apk > SHA256SUMS)
+else
+	(cd "$OUT" && sha256sum sysupgrade.bin tyfza1-telnet-install.tar.gz > SHA256SUMS)
+fi
