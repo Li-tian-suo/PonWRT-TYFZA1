@@ -60,6 +60,10 @@ jobs:
         run: |
           cd sources/openwrt
           make -j"$(nproc)" tools/compile
+      - name: Build toolchain
+        run: |
+          cd sources/openwrt
+          make -j"$(nproc)" toolchain/compile
       - name: Build extra packages
         run: |
           cd sources/openwrt
