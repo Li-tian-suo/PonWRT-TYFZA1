@@ -81,7 +81,13 @@ else
         --stock "${TYFZA1_STOCK_INPUTS:-$PROJECT/analysis/private/live-files}"
     python3 "$PROJECT/tools/prepare_wifi_runtime.py" "$TREE/files" --openwrt-tree "$TREE"
 fi
-make -j"$JOBS" world
+if ! make -j"$JOBS" world; then
+	# Parallel output can hide which step failed; replay the rootfs install
+	# phase serially with full command tracing so the log names the culprit.
+	echo "world failed; replaying package/install with V=s" >&2
+	make -j1 V=s package/install 2>&1 | tail -n 200 >&2 || true
+	exit 1
+fi
 # Packages that are too large for the 32 MiB rootfs are built as standalone
 # APKs instead of being installed into the image. Failures stay non-fatal so
 # the firmware itself is still produced and packaged.
