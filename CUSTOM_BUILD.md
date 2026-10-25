@@ -64,6 +64,7 @@ package_release.sh  -> sysupgrade.bin + APK + SHA256SUMS
 - **UU 依赖**：`kmod-tun`、`kmod-nf-conntrack-netlink`、`kmod-nf-nathelper(-extra)`、`kmod-ipt-raw`、`kmod-ipt-nat`、`kmod-nft-nat`、`iptables-mod-extra`、`iptables-mod-nat-extra`
 - **OpenClash 依赖**：`dnsmasq-full`（nftset + DNSSEC）、`ip-full`、`bash`、`curl`、`unzip`、`ruby`、`ruby-yaml`、`luci-compat`、`luci-lua-runtime`、`luci-lib-ipkg`、`ipset`、`kmod-inet-diag`、`kmod-nft-tproxy`、`kmod-nft-socket`
 - **可选（存在依赖问题时自动跳过）**：`ttyd`、`luci-app-ttyd`、`luci-app-filemanager`
+- **第二批常用依赖（可选清单，缺失只告警）**：`wireguard-tools`/`luci-proto-wireguard`、`openvpn-openssl`、`sqm-scripts`+`luci-app-sqm`、`mwan3`+`luci-app-mwan3`、`ddns-scripts`+`luci-app-ddns`、`miniupnpd-nftables`+`luci-app-upnp`、`etherwake`+`luci-app-wol`、`ksmbd-server`+`luci-app-ksmbd`、`nfs-kernel-server`、`luci-app-hd-idle`、`smartmontools`、`hdparm`、`p910nd`+`luci-app-p910nd`、`conntrack-tools`、`lsof`、`openssl-util`、`socat`、`strace`、`irqbalance`、`zoneinfo-core/asia`、`python3-light` 及 xml/email/urllib/codecs/openssl 模块、USB 串口与网卡 kmod、`btrfs`/`xfs` 支持
 - **Release 附带的独立 APK**：`luci-app-openclash`、`luci-app-netspeedtest` + `homebox` + `ookla-speedtest`（HomeBox 内网测速），由 `=m` 选择编译产出，不进入 rootfs
 - **原有基础**：VPN（WireGuard/OpenVPN）、SQM、多 WAN、内网穿透所需的内核模块与运行库
 
