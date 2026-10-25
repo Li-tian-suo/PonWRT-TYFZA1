@@ -30,6 +30,12 @@ fetch_verified() {
 	echo "$sha  $file" | sha256sum -c -
 }
 
+# Nested lookup: field2 <section> <name> <key>
+field2() {
+	python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]][sys.argv[3]][sys.argv[4]])' \
+		"$LOCK" "$1" "$2" "$3"
+}
+
 mkdir -p "$DL"
 
 # --- OpenClash (luci-app-openclash) --------------------------------------
@@ -76,3 +82,31 @@ else
 	rm -rf "$WORK"
 	echo "Vendored netspeedtest $NS_COMMIT"
 fi
+
+# --- Small LuCI applications (toolbox, scheduled reboot, power off) ------
+for APP in luci-app-systools luci-app-timedreboot luci-app-poweroffdevice; do
+	APP_URL=$(field2 small_apps "$APP" url)
+	APP_SHA=$(field2 small_apps "$APP" sha256)
+	APP_DIR=$(field2 small_apps "$APP" dir)
+	APP_TARBALL="$DL/$APP.tar.gz"
+	fetch_verified "$APP_URL" "$APP_SHA" "$APP_TARBALL"
+	if [ -s "$TREE/package/$APP/Makefile" ]; then
+		echo "$APP already vendored"
+		continue
+	fi
+	WORK=$(mktemp -d)
+	tar -xzf "$APP_TARBALL" -C "$WORK"
+	TOP=$(find "$WORK" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+	[ -n "$TOP" ] || { rm -rf "$WORK"; echo "empty archive for $APP" >&2; exit 1; }
+	if [ -n "$APP_DIR" ]; then
+		SRC="$TOP/$APP_DIR"
+	else
+		SRC="$TOP"
+	fi
+	[ -s "$SRC/Makefile" ] || { rm -rf "$WORK"; echo "$APP Makefile missing" >&2; exit 1; }
+	mkdir -p "$TREE/package"
+	rm -rf "$TREE/package/$APP"
+	cp -a "$SRC" "$TREE/package/$APP"
+	rm -rf "$WORK"
+	echo "Vendored $APP"
+done

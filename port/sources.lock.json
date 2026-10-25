@@ -46,5 +46,25 @@
     "commit": "0c936e9dd513b2915229871b088b85ca817f5083",
     "sha256": "20f9898d4c5a995fc415080bb6611e278609af01f38d6fe7884a3c9b06c0ce44",
     "scope": "HomeBox LAN speed test stack (luci-app-netspeedtest, homebox, ookla-speedtest); shipped as APKs because of the rootfs limit"
+  },
+  "small_apps": {
+    "luci-app-systools": {
+      "url": "https://codeload.github.com/luanmuc/luci-app-systools/tar.gz/52dcfa4be02aa9b451354769854b38f3bc9c5393",
+      "commit": "52dcfa4be02aa9b451354769854b38f3bc9c5393",
+      "sha256": "edd495c7962515be589ccdeb36ee5760f7bf5360026666a89b96605be5c97c68",
+      "dir": ""
+    },
+    "luci-app-timedreboot": {
+      "url": "https://codeload.github.com/kongfl888/luci-app-timedreboot/tar.gz/fce776bc33a838a14c7a2c6098ef4cdc7606a8b2",
+      "commit": "fce776bc33a838a14c7a2c6098ef4cdc7606a8b2",
+      "sha256": "8447d54c1967c1b955eaf584c533417d9080196585dceccc0220df534bce15f4",
+      "dir": ""
+    },
+    "luci-app-poweroffdevice": {
+      "url": "https://codeload.github.com/sirpdboy/luci-app-poweroffdevice/tar.gz/8f53359c3234c7c398b846b5425f9b0b017c03ec",
+      "commit": "8f53359c3234c7c398b846b5425f9b0b017c03ec",
+      "sha256": "c13ee22e1006c8ef7f2cc14b339c5e0e943947e6e2eafe7513bfb726abe7c162",
+      "dir": "luci-app-poweroffdevice"
+    }
   }
 }

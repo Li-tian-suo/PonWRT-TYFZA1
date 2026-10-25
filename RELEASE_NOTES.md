@@ -1,3 +1,13 @@
+## v0.8.2-full.5
+
+### 新增系统工具（工具箱 / 定时重启 / 关机）
+
+- 新增 `luci-app-systools`（OpenWrt 工具箱）：上网向导、IPv6 一键设置、旁路由模式、设备管理、LAN IP、网口管理、Home Assistant/Docker 相关页面。
+- 新增 `luci-app-timedreboot`（定时重启）：按天/按周定时重启，带 `dorboot` 辅助脚本与开机自启。
+- 新增 `luci-app-poweroffdevice`（单纯关机）：LuCI 页面一键执行 `/sbin/poweroff`，带二次确认。
+- Argon Config 无需新增：`luci-app-argon-config` 早已随 Argon 主题进入固件，菜单位置为 **系统（System）→ Argon Config**。
+- 三个插件均按 commit + SHA-256 固定源码，编进镜像（体积很小），不占用额外 APK。
+
 ## v0.8.2-full.4
 
 ### 同步上游原厂数据修复 + 保持自定义依赖
