@@ -84,10 +84,13 @@ fi
 df -h "$TREE" "$TREE/.." 2>/dev/null || true
 if ! make -j"$JOBS" world; then
 	# Parallel output can hide which step failed; replay the rootfs install
-	# phase serially with full command tracing so the log names the culprit.
+	# phase serially and always surface the apk error lines (file conflicts,
+	# unresolved dependencies, ...) that scroll past in the normal log.
 	echo "world failed; replaying package/install with V=s" >&2
 	df -h "$TREE" 2>/dev/null || true
-	make -j1 V=s package/install 2>&1 | tail -n 200 >&2 || true
+	make -j1 V=s package/install > /tmp/tyfza1-install.log 2>&1 || true
+	grep -iE 'error|conflict|overwrite|unable|cannot' /tmp/tyfza1-install.log | tail -n 40 >&2 || true
+	tail -n 30 /tmp/tyfza1-install.log >&2 || true
 	exit 1
 fi
 # Packages that are too large for the 32 MiB rootfs are built as standalone
