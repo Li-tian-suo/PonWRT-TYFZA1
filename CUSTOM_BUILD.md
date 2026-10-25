@@ -13,7 +13,7 @@
 | `port/scripts/build.sh` | 构建前准备第三方包；`make world` 之后单独编译 OpenClash APK |
 | `scripts/package_release.sh` | 把第三方 APK 复制进发布目录并计入 `SHA256SUMS` |
 | `.github/workflows/build-release.yml` | 发布时附带 `packages/*.apk` |
-| `RELEASE_NOTES.md` | 新增 `v0.8.2-full.1` 版本说明 |
+| `RELEASE_NOTES.md` | 新增 `v0.8.2-full.2` 版本说明 |
 
 ## 2. 云编译方法
 
@@ -23,7 +23,7 @@ GitHub → 本仓库 → **Actions → Build TYFZA1 firmware → Run workflow**�
 
 | 输入 | 值 |
 | --- | --- |
-| `release_tag` | `v0.8.2-full.1`（必须与 `RELEASE_NOTES.md` 中 `## v...` 段一致） |
+| `release_tag` | `v0.8.2-full.2`（必须与 `RELEASE_NOTES.md` 中 `## v...` 段一致） |
 | `config_file` | `configs/tyfza1-full.config` |
 | `replace_release` | 首次不勾选；重建同一版本时勾选 |
 
@@ -31,7 +31,7 @@ GitHub → 本仓库 → **Actions → Build TYFZA1 firmware → Run workflow**�
 
 ```sh
 gh workflow run build-release.yml \
-  -f release_tag=v0.8.2-full.1 \
+  -f release_tag=v0.8.2-full.2 \
   -f config_file=configs/tyfza1-full.config
 ```
 
@@ -239,3 +239,18 @@ apk add /tmp/luci-app-netspeedtest-*.apk /tmp/homebox-*.apk /tmp/ookla-speedtest
 - UU 插件、Clash 内核与 HomeBox/ookla 测速组件均为独立安装或运行时下载，首次使用需要设备能访问外网。
 - 硬件流量卸载与 UU/部分代理功能可能冲突，必要时在 **网络 → 防火墙** 关闭。
 - 本设备 USB 控制器为 xHCI 主机模式，只能作为 USB 主机（接手机 / 上网卡 / U 盘），不能反向以 RNDIS 网卡模式被电脑识别。
+## 7. 本次构建的验证结果（v0.8.2-full.2）
+
+- 固件镜像：ootfs.squashfs 16.16 MiB（未压缩约 30 MiB，低于 33,648,640 字节上限），sysupgrade.bin 19.95 MiB。
+- SHA256SUMS 与下载文件逐一比对一致。
+- 直接解包 ootfs.squashfs 核对，确认镜像内实际存在：
+  - iperf3、libiperf3、iperf（2.x）
+  - kmod-usb-net-rndis、kmod-usb-net-cdc-ether、kmod-usb-net-cdc-ncm、kmod-usb-net-cdc-mbim、kmod-usb-net-qmi-wwan、kmod-usb-net-ipheth、kmod-usb-net-huawei-cdc-ncm、kmod-usb-net-sierrawireless、kmod-usb-serial-option、kmod-usb-wdm、kmod-usb-acm、umbim、uqmi、comgt、luci-proto-3g/ncm/mbim/qmi
+  - kmod-fs-ntfs3、kmod-fs-exfat、kmod-fs-ext4、kmod-fs-f2fs、exfat-mkfs、exfat-fsck、
+tfs-3g、e2fsprogs、2fs-tools、lock-mount
+  - 	tyd、luci-app-ttyd、luci-app-filemanager（含 pcd-mod-file）
+  - UU：kmod-tun、
+f-nathelper(-extra)、kmod-ipt-raw、kmod-nft-nat、kmod-nf-conntrack-netlink
+  - OpenClash：dnsmasq-full、ip-full、ash、curl、uby + uby-yaml、luci-compat、luci-lua-runtime、luci-lib-ipkg、ipset、kmod-nft-tproxy
+- Release 附带 APK：luci-app-openclash-0.48.002.apk（7.95 MiB）、homebox-1.0.1-r1.apk（2.34 MiB）、ookla-speedtest-1.2.0-r1.apk（1.02 MiB）、luci-app-netspeedtest-5.2.1-r20260322.apk（0.03 MiB）。
+- 未包含：usbutils（依赖链见 4.4）、usb-modeswitch（feed 中已无此包）。
