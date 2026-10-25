@@ -81,10 +81,12 @@ else
         --stock "${TYFZA1_STOCK_INPUTS:-$PROJECT/analysis/private/live-files}"
     python3 "$PROJECT/tools/prepare_wifi_runtime.py" "$TREE/files" --openwrt-tree "$TREE"
 fi
+df -h "$TREE" "$TREE/.." 2>/dev/null || true
 if ! make -j"$JOBS" world; then
 	# Parallel output can hide which step failed; replay the rootfs install
 	# phase serially with full command tracing so the log names the culprit.
 	echo "world failed; replaying package/install with V=s" >&2
+	df -h "$TREE" 2>/dev/null || true
 	make -j1 V=s package/install 2>&1 | tail -n 200 >&2 || true
 	exit 1
 fi

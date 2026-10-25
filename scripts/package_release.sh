@@ -43,7 +43,9 @@ cp "$PROJECT/COPYING" "$OUT/COPYING"
 # Third-party applications that do not fit the 32 MiB rootfs are shipped as
 # standalone APKs next to the firmware image.
 mkdir -p "$OUT/packages"
-for name in luci-app-openclash luci-app-netspeedtest homebox ookla-speedtest; do
+# Every "=m" selection in the optional list is published as a standalone APK.
+for name in $(sed -n 's/^CONFIG_PACKAGE_\([A-Za-z0-9_.+-]*\)=m$/\1/p' \
+	"$PROJECT/port/configs/tyfza1-optional.config"); do
 	find "$TREE/bin" -type f -name "$name-*.apk" -exec cp {} "$OUT/packages/" \;
 done
 if ls "$OUT"/packages/*.apk >/dev/null 2>&1; then
