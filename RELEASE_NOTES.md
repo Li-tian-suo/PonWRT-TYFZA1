@@ -1,3 +1,19 @@
+## v0.8.2-full.4
+
+### 同步上游原厂数据修复 + 保持自定义依赖
+
+- 同步上游 `6528f6f`、`3439384` 两个原厂数据（factory）修复：
+  - Active Ethernet（family 0）机型不再因缺少 PON 协议而在开机迁移中直接失败，改为告警并留空 PON 模式。
+  - `config.xml` 缺失或为空时提前判定失败，避免写入不完整的本机身份。
+  - `tyfza1-pon-control` 版本号提升到 0.8.2-r2。
+- 软件包内容与 `v0.8.2-full.3` 相同：
+  - 内核/工具：iperf、iperf3、htop、ethtool、pciutils、jq、curl、wget-ssl、tar(gzip)、unzip、bash、ip-full、fdisk、hd-idle。
+  - USB 网络共享：rndis/cdc-ether/cdc-ncm/cdc-mbim/qmi/ipheth/华为/Sierra/RTL8152 + umbim/uqmi/comgt + LuCI 协议页。
+  - USB 存储：exFAT/NTFS3/ext4/F2FS/VFAT/UAS + mkfs/fsck 工具、block-mount。
+  - UU 依赖与 OpenClash 依赖（dnsmasq-full、ruby、luci-compat 等）。
+  - 第二批：WireGuard/OpenVPN 工具、SQM、mwan3、DDNS、UPnP、WOL、nlbwmon、vnstat2、ksmbd、NFS、Python3、btrfs/xfs 工具、USB 串口/网卡驱动。
+- 大型第三方应用仍以独立 APK 发布：`luci-app-openclash`、`luci-app-netspeedtest`、`homebox`、`ookla-speedtest`。
+
 ## v0.8.2-full.3
 
 ### 扩充依赖层（VPN / QoS / 多 WAN / 共享 / 诊断 / Python）
