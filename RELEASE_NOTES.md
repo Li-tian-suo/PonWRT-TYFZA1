@@ -1,3 +1,16 @@
+## v0.8.2-full.1
+
+### 自定义软件包固件（云编译）
+
+- 在 0.8.2-beta 基础上增加自定义软件包选择，构建通过 GitHub Actions 完成。
+- 预装 iperf、iperf3、htop、ethtool、usbutils、pciutils、jq、curl、wget-ssl、tar、unzip、bash、ip-full、fdisk、hd-idle。
+- 补齐 USB 主机与共享网络协议：usb-net、rndis、cdc-ether/eem/subset/ncm、cdc-mbim、qmi-wwan、ipheth、Huawei CDC-NCM、Sierra、RTL8152，以及 usb-wdm、usb-acm、usb-serial-option/wwan、umbim、uqmi、comgt。
+- 补齐 USB 存储驱动与工具：exFAT（内核 + exfatprogs）、NTFS3（内核 + ntfs-3g 兜底）、ext4、F2FS、VFAT、UAS、block-mount、e2fsprogs、dosfstools、f2fs-tools。
+- 增加 UU 加速器运行依赖：TUN、conntrack-netlink、NAT helper、iptables raw/nat 扩展、nft NAT；插件本体不随固件分发。
+- 增加 OpenClash 运行依赖：dnsmasq-full（含 nftset/DNSSEC）、ip-full、bash、curl、unzip、ruby、ruby-yaml、luci-compat、luci-lua-runtime、ipset、inet-diag、nft-tproxy/socket。
+- `luci-app-openclash` 体积约 22 MiB，超出 32 MiB 只读 rootfs 上限，改为随 Release 附带独立 APK，安装到可写 overlay 数据卷（约 183 MiB）。
+- 新增自定义构建配置 `configs/tyfza1-full.config` 与第三方包准备脚本。
+
 ## v0.8.2-beta
 
 ### 无线与硬件加速
