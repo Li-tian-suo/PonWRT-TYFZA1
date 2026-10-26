@@ -3,13 +3,16 @@
 ### 扩充依赖层（VPN / QoS / 多 WAN / 共享 / 诊断 / Python）
 
 - 在 `v0.8.2-full.2` 基础上补充第二批常用依赖，全部放在可选清单，缺失只告警不中断构建。
-- VPN：`wireguard-tools`、`luci-proto-wireguard`、`openvpn-openssl`（内核 `kmod-wireguard`、`kmod-ovpn-backports` 原已预装）。
-- 网络功能：`sqm-scripts` + `luci-app-sqm`、`mwan3` + `luci-app-mwan3`、`ddns-scripts` + `luci-app-ddns`、`miniupnpd-nftables` + `luci-app-upnp`、`etherwake` + `luci-app-wol`。
-- 存储共享与维护：`ksmbd-server` + `luci-app-ksmbd`、`nfs-kernel-server`、`luci-app-hd-idle`、`smartmontools`、`hdparm`、`p910nd` + `luci-app-p910nd`（USB 打印共享）。
-- 诊断：`conntrack-tools`、`lsof`、`openssl-util`、`socat`、`strace`、`irqbalance`、`zoneinfo-core/asia`。
-- Python 3 运行时（`python3-light` 及 xml/email/urllib/codecs/openssl/pkg-resources 模块），使 HomeBox / netspeedtest APK 在无外网时也能安装。
-- 更多 USB 设备：`kmod-usb-serial-ch341/ch348/pl2303/cp210x/ftdi`、`kmod-usb-net-asix(-ax88179)/aqc111/smsc95xx`。
-- 更多文件系统：`kmod-fs-btrfs` + `btrfs-progs`、`kmod-fs-xfs` + `xfsprogs`。
+- 直接装进固件（`=y`）：
+  - VPN：`wireguard-tools`、`luci-proto-wireguard`、`openvpn-openssl`（内核 `kmod-wireguard`、`kmod-ovpn-backports` 原已预装）。
+  - 网络功能：`sqm-scripts` + `luci-app-sqm`、`mwan3` + `luci-app-mwan3`、`ddns-scripts` + `luci-app-ddns`、`miniupnpd-nftables` + `luci-app-upnp`、`etherwake` + `luci-app-wol`。
+  - 统计与诊断：`luci-app-commands`、`nlbwmon` + `luci-app-nlbwmon`、`vnstat` + `luci-app-vnstat2`、`luci-app-hd-idle`、`smartmontools`、`hdparm`、`lsof`、`openssl-util`、`socat`、`strace`、`irqbalance`、`zoneinfo-core/asia`。
+  - 更多 USB 设备：`kmod-usb-serial-ch341/ch348/pl2303/cp210x/ftdi`、`kmod-usb-net-asix(-ax88179)/aqc111/smsc95xx`。
+- 以独立 APK 提供（`=m`，装到可写 overlay，不占只读 rootfs）：
+  - 文件共享：`ksmbd-server` + `luci-app-ksmbd`、`nfs-kernel-server`。
+  - Python 3 运行时（`python3-light` 及 xml/email/urllib/codecs/openssl/pkg-resources 模块），使 HomeBox / netspeedtest 在无外网时也能安装。
+  - 额外文件系统：`kmod-fs-btrfs` + `btrfs-progs`、`kmod-fs-xfs` + `xfsprogs`。
+- 移除 USB 打印共享：本内核无法选中 `kmod-usb-printer`，`p910nd` 会留下无法满足的依赖。
 
 ## v0.8.2-full.2
 
