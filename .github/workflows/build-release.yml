@@ -150,6 +150,10 @@ jobs:
             artifacts/release/tyfza1-telnet-install.tar.gz artifacts/release/SHA256SUMS \
             artifacts/release/COPYING artifacts/release/PonWRT-TYFZA1-source.tar.gz \
             --repo "$GITHUB_REPOSITORY" --clobber
+          if compgen -G "artifacts/release/packages/*.apk" >/dev/null; then
+            gh release upload "$RELEASE_TAG" artifacts/release/packages/*.apk \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          fi
           gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false --latest \
             --title "$RELEASE_TAG" \
             --notes-file "$RUNNER_TEMP/release-notes.md"

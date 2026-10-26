@@ -23,6 +23,11 @@ PE_RADIO_CFLAGS=-DPE_UPLINK sh "$PROJECT/scripts/build_pe_radio_wd.sh" "$PROJECT
 cp "$PROJECT/artifacts/pe-radio-production/pe-tx-code.h" \
     "$PORT/overlay/target/linux/rtl9617c/files-6.18/drivers/net/wireless/realtek/rtl_ax_ap/pe-tx-code.h"
 sh "$PORT/scripts/sync-overlay.sh" "$TREE"
+# Third-party packages (OpenClash) are not in the pinned official feeds.
+# A download failure must not abort the firmware build.
+if ! sh "$PORT/scripts/prepare-extra-packages.sh" "$TREE"; then
+	echo "WARNING: third-party packages unavailable; firmware builds without them" >&2
+fi
 sh "$PROJECT/scripts/prepare_luci_feeds.sh" "$TREE"
 cd "$TREE"
 REGDB_PATCHED=0
@@ -67,3 +72,15 @@ else
     python3 "$PROJECT/tools/prepare_wifi_runtime.py" "$TREE/files" --openwrt-tree "$TREE"
 fi
 make -j"$JOBS" world
+# Packages that are too large for the 32 MiB rootfs are built as standalone
+# APKs instead of being installed into the image. Failures stay non-fatal so
+# the firmware itself is still produced and packaged.
+for pkg in ${TYFZA1_EXTRA_PACKAGES-luci-app-openclash}; do
+	if [ ! -f "package/$pkg/Makefile" ]; then
+		echo "WARNING: extra package $pkg is not present in the tree" >&2
+		continue
+	fi
+	if ! make -j"$JOBS" "package/$pkg/compile"; then
+		echo "WARNING: extra package $pkg failed to build" >&2
+	fi
+done
