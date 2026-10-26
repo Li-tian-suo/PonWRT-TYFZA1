@@ -1,3 +1,12 @@
+## v0.8.2-full.7
+
+### 大固件：OpenClash / HomeBox 等内置（rootfs 上限 128 MiB 生效）
+
+- `luci-app-openclash`、`luci-app-netspeedtest`、`homebox`、`ookla-speedtest` 由独立 APK 改为**直接内置**。
+- 依赖 128 MiB 的 rootfs 上限（见 `v0.8.2-full.6`），因此**必须先刷入 full.6 过渡固件**，再通过 sysupgrade 升级本版本。
+- U-Boot 恢复网页仍限制 32 MiB，**不能**用恢复网页直接刷本版本。
+- 升级后 rootfs 变大、`rootfs_data` 相应缩小（仍保留至少 16 MiB 数据卷余量）。
+
 ## v0.8.2-full.6
 
 ### 过渡固件：解除 32 MiB rootfs 限制（128 MiB 上限）
