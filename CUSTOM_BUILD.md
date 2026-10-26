@@ -59,7 +59,7 @@ package_release.sh  -> sysupgrade.bin + APK + SHA256SUMS
 - **网页终端**：`ttyd` + `luci-app-ttyd`（LuCI 服务 → 终端）
 - **文件管理**：`luci-app-filemanager`（LuCI 系统 → 文件管理，基于 `rpcd-mod-file`）
 - **VLAN**：内核 `CONFIG_VLAN_8021Q=y`（generic config），可在 **网络 → 接口 → 设备** 新建 802.1q 设备
-- **USB 存储**：`kmod-usb3`、`kmod-usb-storage(-extras/-uas)`、`kmod-fs-exfat`、`kmod-fs-ntfs3`、`kmod-fs-ext4`、`kmod-fs-f2fs`、`kmod-fs-vfat`、`kmod-fuse`、`block-mount`、`e2fsprogs`、`dosfstools`、`exfatprogs`、`ntfs-3g`、`f2fs-tools`
+- **USB 存储**：`kmod-usb3`、`kmod-usb-storage(-extras/-uas)`、`kmod-fs-exfat`、`kmod-fs-ntfs3`、`kmod-fs-ext4`、`kmod-fs-f2fs`、`kmod-fs-vfat`、`kmod-fuse`、`block-mount`、`e2fsprogs`、`dosfstools`、`exfat-mkfs`、`exfat-fsck`、`ntfs-3g`、`f2fs-tools`
 - **USB 网络共享**：`kmod-usb-net`、`rndis`、`cdc-ether/eem/subset/ncm`、`cdc-mbim`、`qmi-wwan`、`ipheth`、`huawei-cdc-ncm`、`sierrawireless`、`rtl8152`、`usb-wdm`、`usb-acm`、`usb-serial(-option/-wwan)`、`umbim`、`uqmi`、`comgt`、`luci-proto-qmi/mbim/ncm/3g`
 - **UU 依赖**：`kmod-tun`、`kmod-nf-conntrack-netlink`、`kmod-nf-nathelper(-extra)`、`kmod-ipt-raw`、`kmod-ipt-nat`、`kmod-nft-nat`、`iptables-mod-extra`、`iptables-mod-nat-extra`
 - **OpenClash 依赖**：`dnsmasq-full`（nftset + DNSSEC）、`ip-full`、`bash`、`curl`、`unzip`、`ruby`、`ruby-yaml`、`luci-compat`、`luci-lua-runtime`、`luci-lib-ipkg`、`ipset`、`kmod-inet-diag`、`kmod-nft-tproxy`、`kmod-nft-socket`
@@ -179,7 +179,7 @@ uci set fstab.@mount[0].enabled='1'
 uci commit fstab && /etc/init.d/fstab restart
 ```
 
-- exFAT：`kmod-fs-exfat` + `exfatprogs`（`mkfs.exfat`、`fsck.exfat`）
+- exFAT：`kmod-fs-exfat` + `exfat-mkfs` / `exfat-fsck`（`mkfs.exfat`、`fsck.exfat`）
 - NTFS：优先内核 `ntfs3`；兼容性优先时用 `ntfs-3g`（FUSE）
 - ext4 / F2FS：`e2fsprogs`、`f2fs-tools`
 
