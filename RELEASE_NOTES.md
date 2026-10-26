@@ -1,3 +1,11 @@
+## v0.8.2-full.2
+
+### 自定义软件包固件（云编译，含独立 APK）
+
+- 与 `v0.8.2-full.1` 相同的固件内容（iperf/iperf3、USB 网络共享、USB 存储、UU 与 OpenClash 依赖、ttyd、文件管理）。
+- 大型第三方应用改为 `=m` 选择编译：`luci-app-openclash`、`luci-app-netspeedtest`、`homebox`、`ookla-speedtest` 以独立 APK 随 Release 发布，不进入 32 MiB 只读 rootfs。
+- APK 使用固件构建密钥签名，设备 `/etc/apk/keys/` 已包含对应公钥，可直接 `apk add /tmp/<name>.apk`。
+
 ## v0.8.2-full.1
 
 ### 自定义软件包固件（云编译）
