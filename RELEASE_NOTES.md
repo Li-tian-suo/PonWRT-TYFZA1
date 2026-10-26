@@ -9,7 +9,10 @@
 - 增加 UU 加速器运行依赖：TUN、conntrack-netlink、NAT helper、iptables raw/nat 扩展、nft NAT；插件本体不随固件分发。
 - 增加 OpenClash 运行依赖：dnsmasq-full（含 nftset/DNSSEC）、ip-full、bash、curl、unzip、ruby、ruby-yaml、luci-compat、luci-lua-runtime、ipset、inet-diag、nft-tproxy/socket。
 - `luci-app-openclash` 体积约 22 MiB，超出 32 MiB 只读 rootfs 上限，改为随 Release 附带独立 APK，安装到可写 overlay 数据卷（约 183 MiB）。
-- 新增自定义构建配置 `configs/tyfza1-full.config` 与第三方包准备脚本。
+- 新增网页终端 ttyd（LuCI 服务 → 终端）与网页文件管理（LuCI 系统 → 文件管理）。
+- 802.1Q VLAN 由内核 `CONFIG_VLAN_8021Q=y` 提供，可在 **网络 → 接口 → 设备** 中添加 802.1q 设备。
+- HomeBox 内网测速（`luci-app-netspeedtest` + `homebox` + `ookla-speedtest`）随 Release 以独立 APK 提供，避免 Python/Go 体积占用 rootfs。
+- 新增自定义构建配置 `configs/tyfza1-full.config`、可选包清单 `port/configs/tyfza1-optional.config` 与第三方包准备脚本。
 
 ## v0.8.2-beta
 
