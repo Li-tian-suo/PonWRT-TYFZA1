@@ -133,7 +133,7 @@ sh scripts/package_release.sh sources/openwrt artifacts/release
 
 常用插件的预装依赖配置位于 `port/configs/tyfza1-compat.config`，同步脚本会将其合并入构建配置。
 
-固件保留原厂 UBI 卷编号：内核上限 6 MiB，rootfs 上限约 32.09 MiB。rootfs 按镜像大小取整到 UBI 逻辑擦除块，可写数据卷使用剩余空间；升级时自动调整两者大小。构建脚本自动检查镜像大小。
+固件保留原厂 UBI 卷编号：内核上限 6 MiB，rootfs 上限已放宽到 128 MiB（迁移后的单系统布局；U-Boot 恢复网页仍限 32 MiB）。rootfs 按镜像大小取整到 UBI 逻辑擦除块，可写数据卷使用剩余空间；升级时自动调整两者大小。构建脚本自动检查镜像大小。
 
 </details>
 

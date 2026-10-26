@@ -1,3 +1,12 @@
+## v0.8.2-full.6
+
+### 过渡固件：解除 32 MiB rootfs 限制（128 MiB 上限）
+
+- `port/overlay/target/linux/rtl9617c/image/Makefile`：构建期 rootfs 上限 33,648,640 → **134,217,728** 字节。
+- `port/overlay/target/linux/rtl9617c/base-files/lib/upgrade/tyfza1-storage.sh`：`tyfza1_plan_storage` 使用同一上限，sysupgrade 不再拒绝大镜像。
+- 本版自身仍小于 32 MiB（squashfs 约 27 MiB），可以用 **U-Boot 恢复网页**刷入；刷入后即可用 sysupgrade 升级超过 32 MiB 的固件。
+- 注意：U-Boot 恢复网页（`recovery.c`）仍写死 32 MiB 校验，**不要**用恢复网页直接刷大镜像。
+
 ## v0.8.2-full.5
 
 ### 新增系统工具（工具箱 / 定时重启 / 关机）
