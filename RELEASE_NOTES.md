@@ -1,11 +1,17 @@
-## v0.8.2-full.8 / v0.8.2-full.9
+## v0.8.2-full.9
 
-### 默认无线配置
+### 大固件：默认无线 + OpenClash/HomeBox 内置
 
-- 两个频段默认启用，国家代码 **CN**。
-- SSID 默认 **TYFZA1**，无密码（`encryption=none`）。
-- 默认最大发射功率（`txpower=30`，由驱动按法规/硬件上限收敛）。
-- `v0.8.2-full.8` 为 <32 MiB 的过渡固件，`v0.8.2-full.9` 为内置 OpenClash/HomeBox 的大固件，刷机顺序同 full.6 → full.7。
+- 两个频段默认启用，国家代码 **CN**，SSID **TYFZA1**，无密码，默认最大发射功率（`txpower=30`，驱动按法规/硬件上限收敛）。
+- OpenClash、HomeBox、ookla-speedtest 内置（rootfs 上限 128 MiB）；`luci-app-netspeedtest` 仍为 APK。
+- 必须先刷 `v0.8.2-full.8` 过渡固件，再用 sysupgrade 升级本版本；U-Boot 恢复网页仍限 32 MiB。
+
+## v0.8.2-full.8
+
+### 过渡固件：默认无线配置 + 128 MiB 限制已解开
+
+- 两个频段默认启用，国家代码 **CN**，SSID **TYFZA1**，无密码，默认最大发射功率。
+- 已解除 32 MiB rootfs 限制（`image/Makefile`、`tyfza1_plan_storage` → 134,217,728），但本版自身仍 <32 MiB，可用 U-Boot 恢复网页或旧固件直接升级。
 
 ## v0.8.2-full.7
 
