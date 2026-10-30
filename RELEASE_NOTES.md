@@ -1,3 +1,20 @@
+## v0.8.3-full.2
+
+### 同步 0.8.3-beta + 默认 160 MHz + 内置 OpenClash/HomeBox
+
+- 同步上游 `v0.8.3-beta`：Wi-Fi 硬件加速与吞吐优化、无线稳定性/省电/漫游修复、5 GHz UDP 突发丢包修复、桥/VLAN 与 PON 转发修复、LAN1-LAN4 编号及 2.5G 蓝口为 LAN1。
+- 默认无线：两频段启用、`country=CN`、SSID **TYFZA1**、无密码、`txpower=30`；**5 GHz 默认 HE160**，2.4 GHz 默认 HE40。
+- `luci-app-openclash`、`homebox`、`ookla-speedtest` 内置（128 MiB rootfs 上限）；`luci-app-netspeedtest` 仍为 APK。
+- 必须先刷 `v0.8.3-full.1` 过渡固件再 sysupgrade 本版本；U-Boot 恢复网页仍限 32 MiB。
+
+## v0.8.3-full.1
+
+### 过渡固件：0.8.3-beta + 默认无线（HE160）
+
+- 同步上游 `v0.8.3-beta`。
+- 默认无线：两频段启用、`country=CN`、SSID **TYFZA1**、无密码、`txpower=30`、5 GHz **HE160**、2.4 GHz HE40。
+- 已解除 32 MiB rootfs 限制（134,217,728），本版自身仍 <32 MiB，可用 U-Boot 恢复网页或旧固件升级。
+
 ## v0.8.2-full.9
 
 ### 大固件：默认无线 + OpenClash/HomeBox 内置
@@ -98,6 +115,20 @@
 - HomeBox 内网测速（`luci-app-netspeedtest` + `homebox` + `ookla-speedtest`）随 Release 以独立 APK 提供，避免 Python/Go 体积占用 rootfs。
 - 新增自定义构建配置 `configs/tyfza1-full.config`、可选包清单 `port/configs/tyfza1-optional.config` 与第三方包准备脚本。
 
+## v0.8.3-beta
+
+- 优化双频 Wi-Fi 硬件加速与数据收发，提升单向和双向吞吐。
+- 改进无线信号和接收稳定性，修复切换带宽后的接收异常。
+- 修复无线省电、重连和漫游时可能出现的丢包或连接异常。
+- 修复无线关闭时无法扫描周边网络的问题。
+- 修复本机接收 5 GHz UDP 突发流量时可能丢包的问题。
+- 修复部分网桥和 VLAN 场景下的 PON 业务及硬件转发异常。
+- 修复切换 PON 协议时未自动读取本机 MAC 导致初始化失败的问题。
+- 校正两种机型的 LAN1–LAN4 与机身标号，2.5G 版蓝口为 LAN1；升级后网口配置按新的机身编号生效。
+- 修复 2.5G 版旧配置升级时的网口引用问题。
+- 修复部分原厂 Active Ethernet 设备首次迁移时无法正常启动的问题。
+- 修复安装部分 LuCI 插件后页面无法正常显示的问题。
+
 ## v0.8.2-beta
 
 ### 无线与硬件加速
@@ -135,7 +166,7 @@
 - 增加原厂寄存器、缓冲归还、双 PE 交接和报文完整性检查。
 - 完善 TCP/UDP 测试端点及双向 GRO 处理，隔离造流量进程与 NI 接收核。
 - 补齐 LAN 异步初始化、QSPI 和百兆链路的 GitHub Actions 检查。
-- 完成单流及双向 TCP/UDP 实机测试，更新吞吐、丢包、RDU 和长尾记录。
+- 完成单流、双流及双向 TCP/UDP 实机测试，更新吞吐、丢包、RDU 和长尾记录。
 - 长期稳定性：待测试。
 
 ### 存储扩容
