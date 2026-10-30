@@ -1,3 +1,12 @@
+## v0.8.2-full.8 / v0.8.2-full.9
+
+### 默认无线配置
+
+- 两个频段默认启用，国家代码 **CN**。
+- SSID 默认 **TYFZA1**，无密码（`encryption=none`）。
+- 默认最大发射功率（`txpower=30`，由驱动按法规/硬件上限收敛）。
+- `v0.8.2-full.8` 为 <32 MiB 的过渡固件，`v0.8.2-full.9` 为内置 OpenClash/HomeBox 的大固件，刷机顺序同 full.6 → full.7。
+
 ## v0.8.2-full.7
 
 ### 大固件：OpenClash / HomeBox 等内置（rootfs 上限 128 MiB 生效）
