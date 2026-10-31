@@ -1,3 +1,28 @@
+## v0.8.4-full.2
+
+### 同步 0.8.4-beta + 默认无线（HE160）+ OpenClash/HomeBox 内置
+
+- 同步上游 `v0.8.4-beta`：修复硬件流量卸载触发的内核崩溃/自动重启、Wi-Fi 发送描述符过早复用导致的卡死、双频扫描全 -256 dBm、DFS/160 MHz 下 5 GHz 扫描空白，以及扫描提示与按钮错位。
+- 默认无线：两频段启用、`country=CN`、SSID **TYFZA1**、无密码、`txpower=30`、5 GHz **HE160**、2.4 GHz HE40。
+- `luci-app-openclash`、`homebox`、`ookla-speedtest` 内置；`luci-app-netspeedtest` 仍为 APK。
+- 必须先刷 `v0.8.4-full.1` 过渡固件再 sysupgrade；U-Boot 恢复网页仍限 32 MiB。
+
+## v0.8.4-full.1
+
+### 过渡固件：0.8.4-beta + 默认无线
+
+- 同步上游 `v0.8.4-beta`。
+- 默认无线：SSID **TYFZA1**、无密码、`country=CN`、`txpower=30`、5 GHz **HE160**、2.4 GHz HE40。
+- 已解除 32 MiB rootfs 限制（134,217,728），本版自身 <32 MiB，可走 U-Boot 恢复网页或旧固件升级。
+
+## v0.8.4-beta
+
+- 修复硬件流量卸载时可能触发的内核崩溃和自动重启。
+- 修复 Wi-Fi 发送描述符过早复用导致的无线收发卡住问题。
+- 修复双频扫描信号全部显示 -256 dBm，改为上报真实信号强度。
+- 修复 DFS / 160 MHz 下 5 GHz 扫描空白，支持确认后暂停 AP 扫描并自动恢复。
+- 修复无线扫描提示和按钮错位，简化操作提示。
+
 ## v0.8.3-full.2
 
 ### 同步 0.8.3-beta + 默认 160 MHz + 内置 OpenClash/HomeBox
