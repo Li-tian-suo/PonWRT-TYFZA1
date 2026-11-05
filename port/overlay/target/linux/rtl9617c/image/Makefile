@@ -16,10 +16,19 @@ define Build/tyfza1-dtb
 	$(CP) $(KDIR)/image-$(1).dtb $@
 endef
 
+# OEM 出厂 rootfs 卷容量，仅作参考提示，不再作为硬性限制。
+TYFZA1_OEM_ROOTFS_BYTES ?= 33648640
+# 解除上限后的硬性保护值（256 MiB），防止误打包出完全不可用的镜像。
+TYFZA1_ROOTFS_LIMIT_BYTES ?= 268435456
+
 define Build/tyfza1-rootfs-size
 	@size="$$(stat -c%s $(IMAGE_ROOTFS))"; \
-	[ "$$size" -le 33648640 ] || { \
-		echo "TYFZA1 rootfs is $$size bytes; OEM rootfs volume holds 33648640 bytes" >&2; \
+	if [ "$$size" -gt "$(TYFZA1_OEM_ROOTFS_BYTES)" ]; then \
+		echo "NOTE: TYFZA1 rootfs is $$size bytes, larger than the OEM volume ($(TYFZA1_OEM_ROOTFS_BYTES) bytes)." >&2; \
+		echo "NOTE: 上限已解除，刷机需使用匹配的自定义 UBI 布局（tyfza1-storage）。" >&2; \
+	fi; \
+	[ "$$size" -le "$(TYFZA1_ROOTFS_LIMIT_BYTES)" ] || { \
+		echo "ERROR: TYFZA1 rootfs is $$size bytes, exceeding the hard cap ($(TYFZA1_ROOTFS_LIMIT_BYTES) bytes)." >&2; \
 		exit 1; \
 	}
 endef
