@@ -4,17 +4,32 @@
 'require fs';
 'require ui';
 'require poll';
+'require uci';
 
 return view.extend({
 	load: function() {
-		return fs.exec('/etc/init.d/homebox', [ 'running' ]).then(function(res) {
-			return res.code === 0;
-		}).catch(function() {
-			return false;
+		var self = this;
+
+		return Promise.all([
+			fs.exec('/etc/init.d/homebox', [ 'running' ]).then(function(res) {
+				return res.code === 0;
+			}).catch(function() {
+				return false;
+			}),
+			uci.load('homebox').then(function() {
+				return uci.get('homebox', 'main', 'port') || '3300';
+			}).catch(function() {
+				return '3300';
+			})
+		]).then(function(res) {
+			self.port = res[1];
+			return res[0];
 		});
 	},
 
 	render: function(running) {
+		var self = this;
+		var port = this.port || '3300';
 		var statusEl;
 
 		var setStatus = function(up) {
@@ -58,7 +73,6 @@ return view.extend({
 			_('Homebox 在路由器上运行一个测速服务端，用浏览器打开测速页面即可测试内网真实吞吐。' +
 			  '默认监听 3300 端口，例如 http://192.168.1.1:3300 。' +
 			  '注意：本服务无认证，请勿直接暴露到公网。'));
-
 		var s = m.section(form.NamedSection, 'main', 'homebox', _('服务设置'));
 		s.anonymous = true;
 
@@ -102,7 +116,7 @@ return view.extend({
 					mkButton.call(this, _('停止'), 'stop', 'remove'),
 					E('a', {
 						'class': 'cbi-button',
-						'href': 'http://' + window.location.hostname + ':3300',
+						'href': 'http://' + window.location.hostname + ':' + port,
 						'target': '_blank',
 						'rel': 'noopener'
 					}, [ _('打开测速页面') ])
