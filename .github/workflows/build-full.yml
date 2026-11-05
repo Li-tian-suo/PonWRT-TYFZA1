@@ -1,14 +1,26 @@
 name: Build TYFZA1 Full (custom packages)
 
-# 使用 port/configs/tyfza1-full.config（完整包集合）构建固件。
+# 用 port/configs/tyfza1-full.config 或 tyfza1-slim.config 构建固件。
 # 与 build-release.yml 的区别：不创建 Release，只上传 Artifact，方便反复试包。
+#
+# 两个配置的区别（体积决定能不能用恢复网页刷）：
+#   tyfza1-full.config  ≈33.9 MiB  含 homebox，只能从 LuCI 升级
+#   tyfza1-slim.config  ≈31.0 MiB  不含 homebox，能过 32 MiB 恢复网页
 on:
   workflow_dispatch:
     inputs:
       config_file:
-        description: 自定义 OpenWrt config 路径（默认用完整包集合）
-        required: false
+        description: '配置路径'
+        required: true
+        type: choice
         default: 'port/configs/tyfza1-full.config'
+        options:
+          - 'port/configs/tyfza1-full.config'
+          - 'port/configs/tyfza1-slim.config'
+      custom_config_file:
+        description: '或填任意自定义路径（留空则用上面的选择）'
+        required: false
+        default: ''
   push:
     branches:
       - full
@@ -27,7 +39,7 @@ jobs:
     timeout-minutes: 360
     env:
       GH_TOKEN: ${{ github.token }}
-      TYFZA1_CONFIG_FILE: ${{ inputs.config_file || 'port/configs/tyfza1-full.config' }}
+      TYFZA1_CONFIG_FILE: ${{ inputs.custom_config_file || inputs.config_file || 'port/configs/tyfza1-full.config' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
