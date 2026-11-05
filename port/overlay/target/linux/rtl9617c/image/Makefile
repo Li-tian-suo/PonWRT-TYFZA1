@@ -16,16 +16,19 @@ define Build/tyfza1-dtb
 	$(CP) $(KDIR)/image-$(1).dtb $@
 endef
 
-# OEM 出厂 rootfs 卷容量，仅作参考提示，不再作为硬性限制。
+# OEM 出厂 rootfs volume size. Reference only -- exceeding it no longer fails the build.
 TYFZA1_OEM_ROOTFS_BYTES ?= 33648640
-# 解除上限后的硬性保护值（256 MiB），防止误打包出完全不可用的镜像。
+# Hard safety cap after unlocking the limit (256 MiB).
 TYFZA1_ROOTFS_LIMIT_BYTES ?= 268435456
 
+# NOTE: keep this recipe ASCII-only. Non-ASCII bytes in a Make recipe are fragile
+# when the build host locale is not UTF-8, and they interact badly with the
+# trailing-backslash line continuations used below.
 define Build/tyfza1-rootfs-size
 	@size="$$(stat -c%s $(IMAGE_ROOTFS))"; \
 	if [ "$$size" -gt "$(TYFZA1_OEM_ROOTFS_BYTES)" ]; then \
 		echo "NOTE: TYFZA1 rootfs is $$size bytes, larger than the OEM volume ($(TYFZA1_OEM_ROOTFS_BYTES) bytes)." >&2; \
-		echo "NOTE: 上限已解除，刷机需使用匹配的自定义 UBI 布局（tyfza1-storage）。" >&2; \
+		echo "NOTE: rootfs size limit is unlocked; flashing requires the matching custom UBI layout (tyfza1-storage)." >&2; \
 	fi; \
 	[ "$$size" -le "$(TYFZA1_ROOTFS_LIMIT_BYTES)" ] || { \
 		echo "ERROR: TYFZA1 rootfs is $$size bytes, exceeding the hard cap ($(TYFZA1_ROOTFS_LIMIT_BYTES) bytes)." >&2; \
