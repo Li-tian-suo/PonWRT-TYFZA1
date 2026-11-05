@@ -16,12 +16,15 @@ tyfza1_find_volume() {
 # Only the selected OpenWrt root and rootfs_data participate in allocation.
 # Keep every OEM volume, including the other boot slot, at its original size.
 #
-# NOTE: there is deliberately no fixed "OEM slot size" limit here. The root
-# volume is grown on demand from the free erase blocks of the UBI device, so
-# the real constraint is physical: whatever is left after allocating the root
-# image must still leave TYFZA1_MIN_DATA_BYTES for the writable rootfs_data
-# volume. The old hard-coded 33648640-byte check rejected perfectly valid
-# images even when the UBI device had room for them.
+# Slot limits:
+#   - The OEM layout gives the root volume 33,648,640 bytes. Images larger than
+#     that need the migrated layout, which grows the root volume in place.
+#   - TYFZA1_MAX_ROOT_BYTES is the migrated cap (128 MiB). It matches the value
+#     shipped by the released migration firmware and is kept in sync with the
+#     build-time cap in target/linux/rtl9617c/image/Makefile.
+#   - Independently of the cap, the writable rootfs_data volume must still get
+#     at least TYFZA1_MIN_DATA_BYTES out of the remaining UBI space.
+TYFZA1_MAX_ROOT_BYTES=134217728
 TYFZA1_MIN_DATA_BYTES=16777216
 
 tyfza1_plan_storage() {
@@ -32,8 +35,8 @@ tyfza1_plan_storage() {
 		ubi_r0:${ubidev}_4|ubi_r1:${ubidev}_7) ;;
 		*) echo "Unexpected TYFZA1 root volume: $rootvol" >&2; return 1 ;;
 	esac
-	[ "$size" -gt 0 ] || {
-		echo "Root image size must be positive" >&2
+	[ "$size" -gt 0 ] && [ "$size" -le "$TYFZA1_MAX_ROOT_BYTES" ] || {
+		echo "Root image must fit the $TYFZA1_MAX_ROOT_BYTES-byte migrated slot limit" >&2
 		return 1
 	}
 	free=$(cat "/sys/class/ubi/$ubidev/avail_eraseblocks")

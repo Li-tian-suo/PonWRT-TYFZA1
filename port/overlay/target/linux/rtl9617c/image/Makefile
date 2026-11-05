@@ -18,8 +18,10 @@ endef
 
 # OEM 出厂 rootfs volume size. Reference only -- exceeding it no longer fails the build.
 TYFZA1_OEM_ROOTFS_BYTES ?= 33648640
-# Hard safety cap after unlocking the limit (256 MiB).
-TYFZA1_ROOTFS_LIMIT_BYTES ?= 268435456
+# Hard cap for the migrated (post-OEM) UBI layout. Kept in sync with the limit
+# enforced at flash time by base-files/lib/upgrade/tyfza1-storage.sh, so that we
+# can never build an image that sysupgrade would refuse to install.
+TYFZA1_ROOTFS_LIMIT_BYTES ?= 134217728
 
 # NOTE: keep this recipe ASCII-only. Non-ASCII bytes in a Make recipe are fragile
 # when the build host locale is not UTF-8, and they interact badly with the
@@ -28,7 +30,7 @@ define Build/tyfza1-rootfs-size
 	@size="$$(stat -c%s $(IMAGE_ROOTFS))"; \
 	if [ "$$size" -gt "$(TYFZA1_OEM_ROOTFS_BYTES)" ]; then \
 		echo "NOTE: TYFZA1 rootfs is $$size bytes, larger than the OEM volume ($(TYFZA1_OEM_ROOTFS_BYTES) bytes)." >&2; \
-		echo "NOTE: rootfs size limit is unlocked; flashing requires the matching custom UBI layout (tyfza1-storage)." >&2; \
+		echo "NOTE: requires the migrated UBI layout (128 MiB); the U-Boot web recovery page is limited to 32 MiB." >&2; \
 	fi; \
 	[ "$$size" -le "$(TYFZA1_ROOTFS_LIMIT_BYTES)" ] || { \
 		echo "ERROR: TYFZA1 rootfs is $$size bytes, exceeding the hard cap ($(TYFZA1_ROOTFS_LIMIT_BYTES) bytes)." >&2; \
