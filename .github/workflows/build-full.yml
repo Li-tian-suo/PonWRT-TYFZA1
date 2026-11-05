@@ -124,10 +124,17 @@ jobs:
         if: always()
         run: |
           echo "=== 自定义包里实际生效的项 ==="
+          # 只有 defconfig 真的跑过，.config 才存在。若编译步骤被跳过（例如前序
+          # 校验失败），.config 不存在，下面的 grep 会把每一个包都判成 DROPPED，
+          # 给出完全误导的结论。这种情况下直接跳过，不要输出假数据。
+          if [ ! -f sources/openwrt/.config ]; then
+            echo "SKIPPED: sources/openwrt/.config 不存在（构建未执行），无法判断包是否生效。"
+            exit 0
+          fi
           while IFS= read -r line; do
             case "$line" in
               CONFIG_PACKAGE_*=y)
-                if grep -qxF "$line" sources/openwrt/.config 2>/dev/null; then
+                if grep -qxF "$line" sources/openwrt/.config; then
                   echo "OK      ${line%%=*}"
                 else
                   echo "DROPPED ${line%%=*}"
