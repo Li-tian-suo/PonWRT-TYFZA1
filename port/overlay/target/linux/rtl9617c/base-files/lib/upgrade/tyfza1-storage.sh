@@ -15,6 +15,15 @@ tyfza1_find_volume() {
 
 # Only the selected OpenWrt root and rootfs_data participate in allocation.
 # Keep every OEM volume, including the other boot slot, at its original size.
+#
+# NOTE: there is deliberately no fixed "OEM slot size" limit here. The root
+# volume is grown on demand from the free erase blocks of the UBI device, so
+# the real constraint is physical: whatever is left after allocating the root
+# image must still leave TYFZA1_MIN_DATA_BYTES for the writable rootfs_data
+# volume. The old hard-coded 33648640-byte check rejected perfectly valid
+# images even when the UBI device had room for them.
+TYFZA1_MIN_DATA_BYTES=16777216
+
 tyfza1_plan_storage() {
 	local ubidev="$1" rootvol="$2" size="$3"
 	local path="/sys/class/ubi/$rootvol" data free root_ebs data_ebs=0
@@ -23,8 +32,8 @@ tyfza1_plan_storage() {
 		ubi_r0:${ubidev}_4|ubi_r1:${ubidev}_7) ;;
 		*) echo "Unexpected TYFZA1 root volume: $rootvol" >&2; return 1 ;;
 	esac
-	[ "$size" -gt 0 ] && [ "$size" -le 33648640 ] || {
-		echo "Root image must fit the 33648640-byte OEM slot limit" >&2
+	[ "$size" -gt 0 ] || {
+		echo "Root image size must be positive" >&2
 		return 1
 	}
 	free=$(cat "/sys/class/ubi/$ubidev/avail_eraseblocks")
@@ -39,8 +48,10 @@ tyfza1_plan_storage() {
 	fi
 	TYFZA1_ROOT_BYTES=$(( (size + leb - 1) / leb * leb ))
 	TYFZA1_DATA_BYTES=$(( (free + root_ebs + data_ebs) * leb - TYFZA1_ROOT_BYTES ))
-	[ "$TYFZA1_DATA_BYTES" -ge 16777216 ] || {
-		echo "Insufficient UBI space for rootfs and writable data" >&2
+	[ "$TYFZA1_DATA_BYTES" -ge "$TYFZA1_MIN_DATA_BYTES" ] || {
+		echo "Insufficient UBI space: root image is $size bytes, only" \
+			"$TYFZA1_DATA_BYTES bytes would remain for writable data" \
+			"(minimum $TYFZA1_MIN_DATA_BYTES)" >&2
 		return 1
 	}
 }
