@@ -79,7 +79,15 @@ jobs:
       - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: sources/openwrt/dl
-          key: openwrt-downloads-${{ runner.os }}-${{ hashFiles('port/sources.lock.json', 'configs/feeds.conf') }}
+          # 按 ref 分 key：本工作流允许 main 与 full 分支并行构建（concurrency
+          # 组是 firmware-full-<ref>），若两者共用同一个 key，会同时命中并同时
+          # 尝试保存，先完成的那个写入成功，另一个报 "cache already exists"，
+          # 而且存在把不完整 dl 目录存进缓存的风险。
+          # restore-keys 保证新分支仍能复用已有下载缓存，只是重新存一份。
+          key: openwrt-downloads-${{ runner.os }}-${{ github.ref_name }}-${{ hashFiles('port/sources.lock.json', 'configs/feeds.conf') }}
+          restore-keys: |
+            openwrt-downloads-${{ runner.os }}-${{ hashFiles('port/sources.lock.json', 'configs/feeds.conf') }}
+            openwrt-downloads-${{ runner.os }}-
 
       - name: Obtain common runtime inputs and signing key
         env:
