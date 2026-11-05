@@ -5,7 +5,8 @@
 			"uci": [ "homebox" ],
 			"file": {
 				"/etc/config/homebox": [ "read" ],
-				"/usr/bin/homebox": [ "read" ]
+				"/usr/bin/homebox": [ "read" ],
+				"/etc/init.d/homebox": [ "exec" ]
 			}
 		},
 		"write": {

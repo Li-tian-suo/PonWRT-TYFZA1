@@ -7,6 +7,9 @@ USE_PROCD=1
 
 PROG=/usr/bin/homebox
 
+EXTRA_COMMANDS="running"
+EXTRA_HELP="	running	Return 0 if the service is running, 1 otherwise"
+
 start_instance() {
 	local cfg="$1"
 	local enabled host port workers maxconn ka
@@ -43,4 +46,14 @@ service_triggers() {
 reload_service() {
 	stop
 	start
+}
+
+# LuCI 用它判断服务是否在跑：找到 homebox 进程且该进程存活即返回 0。
+running() {
+	local pid
+	pid=$(pgrep -f "^$PROG serve" 2>/dev/null | head -n1)
+	[ -n "$pid" ] || pid=$(pgrep -x homebox 2>/dev/null | head -n1)
+	[ -n "$pid" ] || return 1
+	kill -0 "$pid" 2>/dev/null || return 1
+	return 0
 }
