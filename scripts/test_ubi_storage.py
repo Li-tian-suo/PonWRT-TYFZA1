@@ -220,11 +220,19 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(self.state['vols']['7']['ebs'], 265)
 
     def test_oversize_and_no_space_fail_before_mutation(self):
-        self.prepare_upgrade(size=33648641, success=False)
+        # 上限是 128 MiB（迁移布局），与 base-files/lib/upgrade/tyfza1-storage.sh
+        # 里的 TYFZA1_MAX_ROOT_BYTES 保持一致；比上限多 1 字节必须失败。
+        self.prepare_upgrade(size=134217729, success=False)
         self.assertEqual(self.state['events'], [])
         self.state['free'] = 0
         self.prepare_upgrade(size=24000000, success=False)
         self.assertEqual(self.state['events'], [])
+
+    def test_image_above_old_oem_slot_limit_passes_cap_check(self):
+        # 33,648,640 字节（原 OEM 卷大小）不再是上限。
+        # 这个尺寸在夹具的 OEM 布局下仍然装得下，所以应当被接受。
+        self.prepare_upgrade(size=33648641)
+        self.check_oem(7)
 
     def test_reserved_id_collision_fails_before_mutation(self):
         self.state['vols']['11'] = dict(name='factory_extra', ebs=1, used=0)
