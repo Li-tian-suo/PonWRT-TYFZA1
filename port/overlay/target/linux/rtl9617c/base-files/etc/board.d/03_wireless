@@ -4,4 +4,21 @@
 
 board_config_update
 ucidef_set_country "CN"
+
+# SSID 固定为 TYFZA1，两个频段同名，不加密（开放热点）。
+#
+# ucidef_set_wireless <band> <ssid> [encryption] [key]
+#
+# 写入 board.json 的 wlan.defaults.ssids。mac80211.uc 生成
+# /etc/config/wireless 时读它：有 ssids 就采用这里的 ssid 且 disabled=0；
+# 没有就回落到 ssid="OpenWrt" 且 disabled=1（默认不开启）。
+#
+# 所以这两行同时解决了「SSID 是 TYFZA1」和「开机即开 WiFi」。
+#
+# 频宽不在这里设：mac80211.uc 把 2G 写死成 20、5G 超过 80 砍成 80，
+# board.json 给多少都没用。40/160MHz 由
+# port/openwrt-patches/101-wifi-default-width.patch 处理。
+ucidef_set_wireless "2g" "TYFZA1" "none"
+ucidef_set_wireless "5g" "TYFZA1" "none"
+
 board_config_flush
