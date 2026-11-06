@@ -3,9 +3,11 @@ name: Build TYFZA1 Full (custom packages)
 # 用 port/configs/tyfza1-full.config 或 tyfza1-slim.config 构建固件。
 # 与 build-release.yml 的区别：不创建 Release，只上传 Artifact，方便反复试包。
 #
-# 两个配置的区别（体积决定能不能用恢复网页刷）：
-#   tyfza1-full.config  ≈33.9 MiB  含 homebox，只能从 LuCI 升级
-#   tyfza1-slim.config  ≈31.0 MiB  不含 homebox，能过 32 MiB 恢复网页
+# 两个配置的区别：体积决定能不能用 U-Boot 恢复网页刷（该页硬上限 32 MiB）。
+# 下面的数字是实测 sysupgrade.bin 大小，不是估算；每次构建后以 artifact 为准：
+#   tyfza1-full.config  —— 含 homebox + 全量 USB/文件系统/网络工具包
+#   tyfza1-slim.config  —— 精简档，优先保证能过 32 MiB 恢复网页
+# 历史实测：full 在只选 68 个包时为 22,774,074 B（21.72 MiB）。
 on:
   workflow_dispatch:
     inputs:

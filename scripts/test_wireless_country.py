@@ -44,9 +44,15 @@ with tempfile.TemporaryDirectory(prefix='wireless-country-') as directory:
                             .replace('/lib/functions/uci-defaults.sh', str(defaults)))
     subprocess.run(shell + [str(board_script)], env=dict(env, CFG=str(board)), check=True)
     data = json.loads(board.read_text())
-    assert data['wlan']['defaults'] == {'country': 'CN'}
+    assert data['wlan']['defaults'] == {
+        'country': 'CN',
+        'ssids': {
+            '2g': {'ssid': 'TYFZA1', 'encryption': 'none'},
+            '5g': {'ssid': 'TYFZA1', 'encryption': 'none'},
+        },
+    }
     assert data['network'] == {'keep': True}
-    for phy, band, width in [('phy0', '5G', 160), ('phy1', '2G', 20)]:
+    for phy, band, width in [('phy0', '5G', 160), ('phy1', '2G', 40)]:
         data['wlan'][phy] = {'path': 'platform/' + phy, 'info': {'bands': {
             band: {'ht': True, 'he': band == '5G', 'max_width': width,
                    'default_channel': 36 if band == '5G' else 1}}}}
@@ -70,10 +76,10 @@ with tempfile.TemporaryDirectory(prefix='wireless-country-') as directory:
     subprocess.run(cli + ['batch'], input=generated, text=True, check=True)
     for radio in ('radio0', 'radio1'):
         assert get(radio + '.country') == 'CN'
-        assert get('default_' + radio + '.disabled') == '1'
-        assert get('default_' + radio + '.ssid') == 'OpenWrt'
-    assert get('radio0.htmode') == 'HE80' and get('radio0.channel') == '36'
-    assert get('radio1.htmode') == 'HT20' and get('radio1.channel') == '1'
+        assert get('default_' + radio + '.disabled') == '0'
+        assert get('default_' + radio + '.ssid') == 'TYFZA1'
+    assert get('radio0.htmode') == 'HE160' and get('radio0.channel') == '36'
+    assert get('radio1.htmode') == 'HT40' and get('radio1.channel') == '1'
 
     migration = work / 'migrate.sh'
     migration.write_text((base / 'etc/uci-defaults/92-tyfza1-wireless-country').read_text()
