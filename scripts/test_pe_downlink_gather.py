@@ -43,8 +43,16 @@ def case(lengths, cap, from_epp=False, hw_rts=False, bandwidth=2, rate=0x100, ob
     u.mem_write(base + 0xd020, struct.pack('<8I', *peer))
     put(base + 0xe204, cap << 18)
     put(base + 0x12020, 32)  # negotiated BA limit, as consumed by ni_select
-    effective_policy = policy if policy is not None else 3793 if cap == 3839 else 7433 if cap == 7935 else 10896
-    put(base + 0x39004, effective_policy | (0 if not effective_policy else 2 if effective_policy <= 3793 else 4 if effective_policy <= 7433 else 7) << 16)
+    # The host publishes the A-MSDU policy from the advertised caps, deriving
+    # num/bytes from caps>>18 (monitor.h). A hardcoded num=7 with a non-zero
+    # size models a combination the host never writes: it makes the PE wait
+    # for an A-MSDU that the zero cap forbids, so the queue only drains on the
+    # 10 s timer. Derive it the same way the host does.
+    def host_policy(max_bytes, bandwidth=2):
+        num = 7 if max_bytes > 7433 else 4 if max_bytes > 3793 else 2
+        return max_bytes | num << 16
+    effective_policy = policy if policy is not None else host_policy(cap)
+    put(base + 0x39004, effective_policy)
     put(base + 0x11a04, 1)
     put(base + 0x11804, len(lengths))
     put(base + 0x13020, len(lengths))
