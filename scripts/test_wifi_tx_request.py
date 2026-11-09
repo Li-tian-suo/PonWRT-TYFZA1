@@ -39,6 +39,8 @@ code = r'''
 typedef uint8_t u8;typedef uint32_t u32;typedef uint64_t u64;
 #define BIT(n) (1U<<(n))
 #define RTL_AX_TX_WP_ADDRESS_MAX 10
+/* Request word flags and WP table offsets come from the driver header. */
+#include "tx-ownership.h"
 #define READ_ONCE(x) (x)
 #define ETH_HLEN 14
 #define ETH_ALEN 6
@@ -57,7 +59,7 @@ struct scatterlist {u32 dma,len;};
 struct mapping {unsigned dma_count;struct scatterlist sg[10];};
 struct slot {struct mapping *mapping;u32 dma;bool firmware_rate;};
 struct tx {bool pe_active,checksum_enabled;struct {void *memory;}pe;u8 *headers;unsigned pe_producer,producer[6];
- bool peer_authorized[128],peer_client[128];u32 peer_rates[128];u64 hardware_pn,encrypted,pe_ethernet,scatter_packets,scatter_segments;
+ bool peer_authorized[128],peer_client[128],peer_preload[128];u32 peer_rates[128];u64 hardware_pn,encrypted,pe_ethernet,scatter_packets,scatter_segments;
  u32 last_eth_dma;u8 last_eth[14];};
 static unsigned get_unaligned_le32(const void*p){u32 v;memcpy(&v,p,4);return v;}
 static void put_unaligned_le32(u32 v,void*p){memcpy(p,&v,4);}
@@ -163,7 +165,8 @@ int main(void){
 }
 '''
 (p/'test_request.c').write_text(code)
-subprocess.run(['cc','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',str(p/'test_request.c'),'-o',str(p/'test_request')],check=True)
+subprocess.run(['cc','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',
+                '-I'+str(driver),str(p/'test_request.c'),'-o',str(p/'test_request')],check=True)
 subprocess.run([str(p/'test_request')],check=True)
 s=(driver/'tx.c').read_text();a=s.index('int rtl_ax_tx_submit(');s=s[a:s.index('\nstatic void rtl_ax_tx_pe_complete',a)]
 assert s.index('memcpy(published, request,') < s.index('tx->slots[id] = slot;') < s.index('\n\tdma_wmb();') < s.index('put_unaligned_le32(tx->pe_producer,')

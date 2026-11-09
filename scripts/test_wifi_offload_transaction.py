@@ -85,10 +85,14 @@ struct rtl_dq_io {struct rtl_fe *fe;};
 struct wiphy {int unused;};struct work_struct {int unused;};struct wiphy_work {int unused;};
 struct wiphy_delayed_work {struct wiphy_work work;};
 struct ieee80211_hw {struct wiphy *wiphy;};
-struct rtl_ax_station {unsigned macid;};struct ieee80211_sta {struct rtl_ax_station drv_priv[1];};
+struct rtl_ax_station {unsigned macid;unsigned long ba_retry[8];};
+/* mac80211 peer/deflink model needed by the BA-start policy in cleanup_work. */
+struct ieee80211_sta {bool wme;struct rtl_ax_station drv_priv[1];
+ struct {struct {bool ht_supported;}ht_cap;struct {bool vht_supported;}vht_cap;
+  struct {bool has_he;}he_cap;}deflink;};
 enum {IEEE80211_AMPDU_TX_STOP_CONT,IEEE80211_AMPDU_TX_STOP_FLUSH,IEEE80211_AMPDU_TX_STOP_FLUSH_CONT};
 struct ieee80211_ampdu_params {struct ieee80211_sta *sta;unsigned action,tid;};
-struct wireless_dev {struct net_device *netdev;int iftype;bool use_4addr;};struct ieee80211_vif {struct wireless_dev wdev;int type;};
+struct wireless_dev {struct net_device *netdev;int iftype;bool use_4addr;};struct ieee80211_vif {struct wireless_dev wdev;int type;u8 addr[6];};
 struct rtl_ax_tx {int lock;bool pe_active,peer_offloaded[128],peer_authorized[128];unsigned occupied,ni_reports,ni_failed;
  struct {void *memory;}pe;void *rx,*pdev;
  struct {bool active,retire_quiescing,route_peers[128];u8 retire_macid;unsigned cpu,route_macid,route_tim[128];struct net_device *route_dev;struct work_struct ps_work;}ni;};
@@ -100,6 +104,15 @@ struct rtl_ax_ap {struct rtl_ax_tx *tx;struct ieee80211_hw *hw;struct ieee80211_
 static struct rtl_ax_ap *active_radio;
 static struct rtl_ax_ap *rtl_ax_monitor_radio(struct ieee80211_hw *hw){assert(active_radio->hw==hw);return active_radio;}
 static struct rtl_fe *active_fe;static struct rtl_ax_tx *active_tx;static int ni_test_lock;
+static unsigned long jiffies;
+#define time_after_eq(a,b) ((long)((a)-(b))>=0)
+static void rcu_read_lock(void){}static void rcu_read_unlock(void){}
+static struct ieee80211_sta ba_peer;
+static struct ieee80211_sta *ieee80211_find_sta_by_ifaddr(struct ieee80211_hw *hw,const u8 *a,const u8 *b){
+ (void)hw;(void)b;return a?&ba_peer:NULL;}
+static void ieee80211_start_tx_ba_session(struct ieee80211_sta *sta,unsigned tid,unsigned x){
+ (void)sta;(void)tid;(void)x;}
+static u8 rtl_ax_tx_active_tids(struct rtl_ax_tx *tx,unsigned id){(void)tx;(void)id;return 0;}
 static unsigned fail_stage,fail_index,ages[2],timers;static struct wiphy_work *queued;
 static struct rtl_dq_io fe_io(struct rtl_fe *fe){return (struct rtl_dq_io){fe};}
 static void mutex_lock(int *p){assert(!*p);*p=1;}static void mutex_unlock(int *p){assert(*p);*p=0;}

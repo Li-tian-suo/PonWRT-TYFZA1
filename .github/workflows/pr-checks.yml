@@ -18,35 +18,36 @@ jobs:
       - name: Run production-code regression tests
         run: |
           mkdir -p artifacts logs
-          python3 scripts/test_lan_probe_isolation.py
-          python3 scripts/test_lan_async.py
-          python3 scripts/test_qspi_poll.py
-          python3 scripts/test_lan_pm_mapping.py
-          python3 scripts/test_lan_link_mode.py
-          python3 scripts/test_fe_lan_lifecycle.py
-          python3 scripts/test_itu_pppoe_datapath.py
-          python3 scripts/test_sta_client_lifecycle.py
-          python3 scripts/test_radio_mesh.py
-          python3 scripts/test_sta_beacon.py
-          python3 scripts/test_sta_scan_offload.py
-          python3 scripts/test_wifi_station_release.py
-          python3 scripts/test_wifi_notifier.py
-          python3 scripts/test_wifi_authorization.py
-          python3 scripts/test_fe_wifi_peer_route.py
-          python3 scripts/test_package_timeout.py
-          python3 scripts/test_radio_ni_retire_flush.py
-          python3 scripts/test_wifi_ni_retirement.py
-          python3 scripts/test_radio_rx_ba_cleanup.py
-          python3 tools/test_wifi_rx_ba_sessions.py
-          python3 scripts/test_wifi_offload_transaction.py
-          python3 scripts/test_radio_key_cleanup.py
-          python3 scripts/test_ni_release_inflight.py
-          python3 scripts/test_radio_basic_control.py
-          python3 scripts/test_radio_ba_trigger.py
-          python3 scripts/test_radio_rpq_batch.py
-          python3 scripts/test_radio_txbd_dma.py
-          python3 scripts/test_wifi_packet_steering.py
-          python3 scripts/test_wifi_tx_request.py
+          sh scripts/run_ci_tests.sh \
+            scripts/test_lan_probe_isolation.py \
+            scripts/test_lan_async.py \
+            scripts/test_qspi_poll.py \
+            scripts/test_lan_pm_mapping.py \
+            scripts/test_lan_link_mode.py \
+            scripts/test_fe_lan_lifecycle.py \
+            scripts/test_itu_pppoe_datapath.py \
+            scripts/test_sta_client_lifecycle.py \
+            scripts/test_radio_mesh.py \
+            scripts/test_sta_beacon.py \
+            scripts/test_sta_scan_offload.py \
+            scripts/test_wifi_station_release.py \
+            scripts/test_wifi_notifier.py \
+            scripts/test_wifi_authorization.py \
+            scripts/test_fe_wifi_peer_route.py \
+            scripts/test_package_timeout.py \
+            scripts/test_radio_ni_retire_flush.py \
+            scripts/test_wifi_ni_retirement.py \
+            scripts/test_radio_rx_ba_cleanup.py \
+            tools/test_wifi_rx_ba_sessions.py \
+            scripts/test_wifi_offload_transaction.py \
+            scripts/test_radio_key_cleanup.py \
+            scripts/test_ni_release_inflight.py \
+            scripts/test_radio_basic_control.py \
+            scripts/test_radio_ba_trigger.py \
+            scripts/test_radio_rpq_batch.py \
+            scripts/test_radio_txbd_dma.py \
+            scripts/test_wifi_packet_steering.py \
+            scripts/test_wifi_tx_request.py
       - name: Verify PE completion records and publication
         run: |
           sudo apt-get update

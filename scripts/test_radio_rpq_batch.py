@@ -24,12 +24,14 @@ code=r'''
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-typedef uint8_t u8; typedef uint16_t __le16; typedef uint32_t u32; typedef uint64_t u64;
+typedef uint8_t u8; typedef uint16_t u16; typedef uint16_t __le16; typedef uint32_t u32; typedef uint64_t u64;
 #define BIT(x) (1U<<(x))
 #define RTL_AX_TX_ENTRIES 256
 #define RTL_AX_TX_PAGES 384
 #define RTL_AX_TX_RINGS 6
-#define RTL_AX_NI_PS_WP_GENERATION 0x15000
+#define RTL_AX_NI_PS_WP_GENERATION RTL_AX_NI_GENERATIONS
+/* PE-visible request/tag table offsets come from the driver header. */
+#include "tx-ownership.h"
 #define PE_PROBE_MAILBOX 0x2000
 #define NL80211_BAND_5GHZ 1
 #define IEEE80211_TX_CTL_HW_80211_ENCAP BIT(0)
@@ -49,7 +51,7 @@ struct sk_buff {u8 data[64];struct ieee80211_tx_info cb;};
 struct ieee80211_hdr {__le16 fc,duration;u8 addresses[18];__le16 seq_ctrl;};
 struct ieee80211_sta {int unused;};struct ieee80211_hw {int unused;};
 struct ieee80211_tx_status {struct sk_buff *skb;struct ieee80211_tx_info *info;struct ieee80211_sta *sta;};
-struct rtl_ax_tx_slot {struct sk_buff *skb;unsigned ring,macid;bool pe_sequence,firmware_rate;};
+struct rtl_ax_tx_slot {struct sk_buff *skb;unsigned ring,macid;bool pe_sequence,firmware_rate,quota_counted;};
 struct rtl_ax_rx_packet {unsigned bytes;u8 *payload;bool pe_completed;};
 /* The EWMA arithmetic is covered by test_radio_mesh_metric; record each
  * update here to compare RPQ dispatch ordering and ownership. */
@@ -59,7 +61,8 @@ struct rtl_ax_tx {struct ewma_rtl_ax_success peer_success[128];int lock,key_flus
  bool pe_active,running,queues_paused,queues_stopped,peer_asleep[128],pending[256];
  struct ieee80211_hw *hw;struct rtl_ax_tx_slot slots[256];
  unsigned occupied,last_report,unmatched,completed,completed_ring[6],status_count[8],polluted,queue_wakes;
- unsigned ni_reports,ni_failed,ni_first_report_ns,ampdu_completed;};
+ unsigned ni_reports,ni_failed,ni_first_report_ns,ampdu_completed;
+ u32 ac_pending[128][4],wmm_quota;};
 static unsigned bh,rcu,locks,wakes,unmaps,returns,raws,pe_done,ps_done,scheduled,waiters,lookups,dispatches;
 static unsigned first_dispatch_completed,expected,batch;
 static struct rtl_ax_tx *active;static bool runnable;static struct ieee80211_sta sta;
@@ -74,8 +77,11 @@ static void rcu_read_unlock(void){assert(rcu);rcu--;}
 #define test_bit(id,p) ((p)[id])
 #define __clear_bit(id,p) ((p)[id]=false)
 static u32 get_unaligned_le32(const void*p){u32 v;memcpy(&v,p,4);return v;}
+static void put_unaligned_le32(u32 v,void*p){memcpy(p,&v,4);}
+static void put_unaligned_le16(u16 v,void*p){memcpy(p,&v,2);}
 static __le16 get_unaligned(const __le16*p){__le16 v;memcpy(&v,p,2);return v;}
 #define rtl_ax_ap_read32(p) get_unaligned_le32(p)
+#define dma_wmb() ((void)0)
 static void schedule_work(void*p){(void)p;scheduled++;}
 static void wake_up_all(void*p){(void)p;waiters++;}
 static void ni_route_sleep(struct rtl_ax_tx*t,unsigned id){assert(t==active&&id<128);scheduled++;}
@@ -97,7 +103,8 @@ struct result {struct ewma_rtl_ax_success peer_success[128];unsigned completed,o
  unsigned completed_ring[6],status_count[8],flags[256],seq[256];
  unsigned wakes,unmaps,returns,raws,pe_done,ps_done,scheduled,waiters,lookups;};
 static struct result run(bool batching,unsigned count,unsigned mode){
- static u8 mem[0x20000],headers[256*128];static struct sk_buff skbs[256];
+/* tx.c requests PE core1, which pe_probe.h sizes at SZ_512K. */
+ static u8 mem[0x80000],headers[256*128];static struct sk_buff skbs[256];
  static u32 reports[264];struct ieee80211_hw hw={};struct rtl_ax_tx t={.pe_active=true,.running=true,.queues_stopped=true,.hw=&hw,.pe={mem},.headers=headers};
  memset(mem,0,sizeof(mem));memset(headers,0,sizeof(headers));memset(skbs,0,sizeof(skbs));
  bh=rcu=locks=wakes=unmaps=returns=raws=pe_done=ps_done=scheduled=waiters=lookups=dispatches=0;
@@ -112,11 +119,23 @@ static struct result run(bool batching,unsigned count,unsigned mode){
   t.slots[n]=(struct rtl_ax_tx_slot){.skb=&skbs[n],.ring=ring,.macid=n%128,.pe_sequence=(n%2)==1};t.pending[n]=true;
   t.peer_asleep[n%128]=!!(n%3);__le16 seq=0xabc0+n;memcpy(headers+n*128+22,&seq,2);
   u32 ra=BIT(17);memcpy(mem+0xe200+(n%128)*4,&ra,4);
+  /* Raw PE reports are decoded through the PCIe WP tag map before the
+   * software request ID is known, so identity-map each ring/tag slot. */
+  put_unaligned_le32(n+1,mem+RTL_AX_WP_TAG_MAP+(ring*RTL_AX_WP_TAG_STRIDE+n)*4);
  }
  reports[count]=1|400<<16;reports[count+1]=1|7<<8|254<<16;
  reports[count+2]=count?reports[0]:1; // duplicate or empty pending ID
+/* NI owner metadata, generation and rate come from the same PE tables the
+ * driver reads; the peer address table sits at 0xe400. */
  unsigned member=127,meta=(3<<8)|BIT(16),generation=77,rate=BIT(20)|0x80;
- memcpy(mem+0xc400+member*8+4,&meta,4);memcpy(mem+RTL_AX_NI_PS_WP_GENERATION+member*4,&generation,4);memcpy(mem+0xe000+member*4,&rate,4);
+ memcpy(mem+RTL_AX_NI_OWNERS+member*8+4,&meta,4);
+ memcpy(mem+RTL_AX_NI_GENERATIONS+member*4,&generation,4);
+ memcpy(mem+RTL_AX_NI_RATES+member*4,&rate,4);
+ memcpy(mem+0xe400+member*8,&member,4);
+ /* A raw PE report is decoded through the PCIe WP tag map first, so point
+  * the NI request's tag back at itself to reach the NI completion path. */
+ put_unaligned_le32(384,mem+RTL_AX_WP_TAG_MAP+383*4);
+ reports[count+1]=1|383<<8|254<<16;
  reports[count+3]=1|383<<16;
  struct rtl_ax_rx_packet packet={.bytes=(count+4)*4+(mode%4),.payload=(void*)reports};
  assert(!(batching?new_report(&t,&hw,&packet):old_report(&t,&hw,&packet)));
@@ -138,5 +157,6 @@ int main(void){unsigned cases=0;for(unsigned n=0;n<=256;n++)for(unsigned mode=0;
 with tempfile.TemporaryDirectory(prefix='rpq-batch-') as tmp:
     work=Path(tmp)
     (work/'test.c').write_text(code)
-    subprocess.run(['cc','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',str(work/'test.c'),'-o',str(work/'test')],check=True)
+    subprocess.run(['cc','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',
+                    '-I'+str(path.parent),str(work/'test.c'),'-o',str(work/'test')],check=True)
     subprocess.run([str(work/'test')],check=True)

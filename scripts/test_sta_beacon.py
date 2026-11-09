@@ -54,6 +54,9 @@ struct rtl_ax_ap {
  struct ieee80211_vif *ap_vif;void *sta_vif;bool sta_associated;u8 sta_bssid[6];bool ap_started,mesh_started; unsigned chip; struct { unsigned primary; } channel; void *hw;
  u64 rx_decrypted, mac80211_packets, rx_copy_bytes, rx_prepare_ns, rx_mac80211_ns;
 };
+/* Association-request vendor tagging touches the mac80211 peer. */
+struct rtl_ax_station {u8 vendor;};
+struct ieee80211_sta {struct rtl_ax_station drv_priv[1];};
 static bool rtl_ax_datapath_profile;
 static struct ieee80211_rx_status received;
 static unsigned deliveries;
@@ -63,6 +66,18 @@ static __le16 read_frame_control(const void *p) { __le16 v; memcpy(&v, p, sizeof
 #define get_unaligned(p) read_frame_control(p)
 static bool ieee80211_is_beacon(__le16 fc) { return (fc & 0xfc) == 0x80; }
 static bool ieee80211_is_probe_resp(__le16 fc) { return (fc & 0xfc) == 0x50; }
+static bool ieee80211_is_assoc_req(__le16 fc) { return (fc & 0xfc) == 0x00; }
+static bool ieee80211_is_reassoc_req(__le16 fc) { return (fc & 0xfc) == 0x20; }
+static unsigned vendor_calls;
+static u8 rtl_ax_vendor(const u8 *a, const u8 *b, unsigned bytes) {
+ (void)a; (void)b; (void)bytes; vendor_calls++; return 1;
+}
+static void rcu_read_lock(void) {}
+static void rcu_read_unlock(void) {}
+static struct ieee80211_sta assoc_peer;
+static struct ieee80211_sta *ieee80211_find_sta_by_ifaddr(void *hw, const u8 *a, const u8 *b) {
+ (void)hw; (void)b; return a ? &assoc_peer : NULL;
+}
 static u64 test_time = 123456;
 static u64 ktime_get_ns(void) { return test_time; }
 static u64 ktime_get_boottime_ns(void) { return 987654; }

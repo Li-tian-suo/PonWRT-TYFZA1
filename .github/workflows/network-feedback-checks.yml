@@ -18,15 +18,16 @@ jobs:
       - name: Check Wi-Fi completion ownership and cleanup
         run: |
           mkdir -p artifacts logs
-          python3 scripts/test_wifi_cleanup_nonblocking.py
-          python3 scripts/test_radio_key_cleanup.py
-          python3 scripts/test_radio_pe_waiters.py
-          python3 scripts/test_wifi_offload_transaction.py
-          python3 scripts/test_radio_rx_ba_cleanup.py
-          python3 scripts/test_radio_ni_retire_flush.py
-          python3 scripts/test_wifi_ni_retirement.py
-          python3 scripts/test_ni_release_inflight.py
-          python3 scripts/test_wifi_authorization.py
+          sh scripts/run_ci_tests.sh \
+            scripts/test_wifi_cleanup_nonblocking.py \
+            scripts/test_radio_key_cleanup.py \
+            scripts/test_radio_pe_waiters.py \
+            scripts/test_wifi_offload_transaction.py \
+            scripts/test_radio_rx_ba_cleanup.py \
+            scripts/test_radio_ni_retire_flush.py \
+            scripts/test_wifi_ni_retirement.py \
+            scripts/test_ni_release_inflight.py \
+            scripts/test_wifi_authorization.py
       - name: Fetch the LuCI revision used for the address regression
         run: |
           git init artifacts/luci-reference
